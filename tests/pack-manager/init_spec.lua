@@ -66,8 +66,53 @@ describe("pack-manager main module", function()
       assert.is_function(pack_manager.add_plugin)
     end)
 
-    -- Note: Full integration testing would require more complex mocking
-    -- of vim.pack.add, file system operations, etc.
+    it("should handle colorscheme plugin installation flow", function()
+      -- Mock vim.pack functions
+      local pack_added = false
+      vim.pack.add = function(spec)
+        pack_added = true
+      end
+      vim.pack.get = function() return {} end
+
+      -- Mock file operations
+      vim.fn.writefile = function() return 0 end
+      vim.fn.filereadable = function() return 0 end
+      vim.fn.mkdir = function() return 0 end
+
+      -- Track user interactions
+      local prompts_seen = {}
+      vim.fn.input = function(prompt)
+        table.insert(prompts_seen, prompt)
+        if prompt:match("Install this plugin") then
+          return "y"  -- Confirm installation
+        elseif prompt:match("Create config file") then
+          return "y"
+        elseif prompt:match("Add require statement") then
+          return "y"
+        elseif prompt:match("Apply this colorscheme now") then
+          return "y"
+        elseif prompt:match("Load and apply the colorscheme now") then
+          return "n"  -- Don't load immediately in test
+        end
+        return ""
+      end
+
+      -- Call add_plugin with a colorscheme
+      pack_manager.add_plugin("folke/tokyonight.nvim")
+
+      -- Verify the flow
+      assert.is_true(pack_added)
+
+      -- Check that colorscheme-specific prompts were shown
+      local found_colorscheme_prompt = false
+      for _, prompt in ipairs(prompts_seen) do
+        if prompt:match("Apply this colorscheme now") then
+          found_colorscheme_prompt = true
+          break
+        end
+      end
+      assert.is_true(found_colorscheme_prompt)
+    end)
   end)
 
   describe("disable_plugin function", function()
@@ -147,6 +192,14 @@ describe("pack-manager main module", function()
         return 0
       end
 
+      -- Mock input to not load immediately
+      vim.fn.input = function(prompt)
+        if prompt:match("Load and apply the colorscheme now") then
+          return "n"
+        end
+        return ""
+      end
+
       pack_manager._test_create_plugin_config("tokyonight.nvim", "https://github.com/folke/tokyonight.nvim", {
         add_require = false,
         set_colorscheme = true
@@ -155,13 +208,59 @@ describe("pack-manager main module", function()
       assert.is_not_nil(written_content)
       -- Check for colorscheme command
       local has_colorscheme_cmd = false
-      for _, line in ipairs(written_content) do
+      local colorscheme_line_index = nil
+      local pack_add_line_index = nil
+
+      for i, line in ipairs(written_content) do
+        if line:match("vim%.pack%.add") then
+          pack_add_line_index = i
+        end
         if line:match("vim%.cmd%.colorscheme") and not line:match("^%-%-") then
           has_colorscheme_cmd = true
-          break
+          colorscheme_line_index = i
         end
       end
+
       assert.is_true(has_colorscheme_cmd)
+      assert.is_not_nil(pack_add_line_index)
+      assert.is_not_nil(colorscheme_line_index)
+      -- Ensure colorscheme command comes AFTER vim.pack.add
+      assert.is_true(colorscheme_line_index > pack_add_line_index)
+    end)
+
+    it("should create colorscheme config with commented command by default", function()
+      local written_content = nil
+      vim.fn.writefile = function(lines, file)
+        written_content = lines
+        return 0
+      end
+
+      pack_manager._test_create_plugin_config("tokyonight.nvim", "https://github.com/folke/tokyonight.nvim", {
+        add_require = false,
+        set_colorscheme = false
+      })
+
+      assert.is_not_nil(written_content)
+      -- Check that colorscheme command is commented
+      local has_commented_colorscheme = false
+      local pack_add_line_index = nil
+      local colorscheme_line_index = nil
+
+      for i, line in ipairs(written_content) do
+        if line:match("vim%.pack%.add") then
+          pack_add_line_index = i
+        end
+        if line:match("^%-%- vim%.cmd%.colorscheme") then
+          has_commented_colorscheme = true
+          colorscheme_line_index = i
+        end
+      end
+
+      assert.is_true(has_commented_colorscheme)
+      assert.is_not_nil(pack_add_line_index)
+      assert.is_not_nil(colorscheme_line_index)
+      -- Ensure commented colorscheme command still comes AFTER vim.pack.add
+      assert.is_true(colorscheme_line_index > pack_add_line_index)
     end)
 
     it("should create LSP config with setup call", function()
@@ -179,13 +278,24 @@ describe("pack-manager main module", function()
       assert.is_not_nil(written_content)
       -- Check for require().setup() pattern
       local has_setup = false
-      for _, line in ipairs(written_content) do
+      local pack_add_line_index = nil
+      local setup_line_index = nil
+
+      for i, line in ipairs(written_content) do
+        if line:match("vim%.pack%.add") then
+          pack_add_line_index = i
+        end
         if line:match("require%(.+%)%.setup%(") then
           has_setup = true
-          break
+          setup_line_index = i
         end
       end
+
       assert.is_true(has_setup)
+      assert.is_not_nil(pack_add_line_index)
+      assert.is_not_nil(setup_line_index)
+      -- Ensure setup call comes AFTER vim.pack.add
+      assert.is_true(setup_line_index > pack_add_line_index)
     end)
 
     it("should add require statement when requested", function()
@@ -235,6 +345,139 @@ describe("pack-manager main module", function()
       vim.fn.readfile = original_readfile
       vim.fn.writefile = original_writefile
       vim.fn.filereadable = original_filereadable
+    end)
+  end)
+
+  describe("config content verification", function()
+    it("should generate correct colorscheme config content", function()
+      local written_content = nil
+      vim.fn.writefile = function(lines, file)
+        written_content = lines
+        return 0
+      end
+      vim.fn.filereadable = function() return 0 end
+      vim.fn.mkdir = function() return 0 end
+
+      -- Mock input to not load immediately
+      vim.fn.input = function(prompt)
+        if prompt:match("Load and apply the colorscheme now") then
+          return "n"
+        end
+        return ""
+      end
+
+      pack_manager._test_create_plugin_config("tokyonight.nvim", "https://github.com/folke/tokyonight.nvim", {
+        add_require = false,
+        set_colorscheme = true
+      })
+
+      assert.is_not_nil(written_content)
+      -- Verify exact content structure
+      assert.are.equal('vim.pack.add({', written_content[1])
+      assert.are.equal('  "https://github.com/folke/tokyonight.nvim",', written_content[2])
+      assert.are.equal('})', written_content[3])
+      assert.are.equal('', written_content[4])
+      assert.are.equal('-- tokyonight.nvim colorscheme configuration', written_content[5])
+      assert.are.equal('-- Uncomment the line below to set as default colorscheme', written_content[6])
+      -- This should be uncommented when set_colorscheme is true
+      assert.are.equal("vim.cmd.colorscheme('tokyonight')", written_content[7])
+    end)
+
+    it("should load colorscheme immediately when user chooses to", function()
+      local sourced_file = nil
+
+      vim.fn.writefile = function()
+        return 0
+      end
+      vim.fn.filereadable = function() return 0 end
+      vim.fn.mkdir = function() return 0 end
+
+      -- Mock vim.cmd to capture source command
+      local original_cmd = vim.cmd
+      vim.cmd = function(cmd)
+        if type(cmd) == "string" and cmd:match("^source ") then
+          sourced_file = cmd:match("^source (.+)$")
+        elseif type(cmd) == "table" and cmd.cmd == "source" then
+          sourced_file = cmd.args
+        end
+      end
+
+      -- Mock input to load immediately
+      vim.fn.input = function(prompt)
+        if prompt:match("Load and apply the colorscheme now") then
+          return "y"
+        end
+        return ""
+      end
+
+      pack_manager._test_create_plugin_config("tokyonight.nvim", "https://github.com/folke/tokyonight.nvim", {
+        add_require = false,
+        set_colorscheme = true
+      })
+
+      -- Verify the config file was sourced
+      assert.is_not_nil(sourced_file)
+      assert.is_true(sourced_file:match("tokyonight%.lua$") ~= nil)
+
+      -- Restore
+      vim.cmd = original_cmd
+    end)
+
+    it("should not prompt for immediate loading when set_colorscheme is false", function()
+      local input_called = false
+
+      vim.fn.writefile = function() return 0 end
+      vim.fn.filereadable = function() return 0 end
+      vim.fn.mkdir = function() return 0 end
+
+      -- Mock input to detect if it's called with colorscheme prompt
+      vim.fn.input = function(prompt)
+        if prompt:match("Load and apply the colorscheme now") then
+          input_called = true
+        end
+        return ""
+      end
+
+      pack_manager._test_create_plugin_config("tokyonight.nvim", "https://github.com/folke/tokyonight.nvim", {
+        add_require = false,
+        set_colorscheme = false  -- Not activating colorscheme
+      })
+
+      -- Should NOT prompt for immediate loading
+      assert.is_false(input_called)
+    end)
+
+    it("should handle source command errors gracefully", function()
+      vim.fn.writefile = function() return 0 end
+      vim.fn.filereadable = function() return 0 end
+      vim.fn.mkdir = function() return 0 end
+
+      -- Mock vim.cmd to throw error on source
+      local original_cmd = vim.cmd
+      vim.cmd = function(cmd)
+        if type(cmd) == "string" and cmd:match("^source ") then
+          error("Failed to source file")
+        end
+      end
+
+      -- Mock input to load immediately
+      vim.fn.input = function(prompt)
+        if prompt:match("Load and apply the colorscheme now") then
+          return "y"
+        end
+        return ""
+      end
+
+      -- Should not throw error
+      assert.has_no.errors(function()
+        pack_manager._test_create_plugin_config("tokyonight.nvim", "https://github.com/folke/tokyonight.nvim", {
+          add_require = false,
+          set_colorscheme = true
+        })
+      end)
+
+      -- Restore
+      vim.cmd = original_cmd
     end)
   end)
 

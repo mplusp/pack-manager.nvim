@@ -28,36 +28,12 @@ While we believe the plugin is functional and well-structured, **it has not been
 
 ## Installation
 
-### Using vim.pack (Neovim 0.12+)
-
-Add to your plugin configuration:
+Since this plugin is specifically designed to enhance Neovim's built-in `vim.pack` plugin manager, you should install it using `vim.pack` itself:
 
 ```lua
 vim.pack.add({
   "https://github.com/mplusp/pack-manager.nvim"
 })
-```
-
-### Using other plugin managers
-
-**lazy.nvim:**
-```lua
-{
-  "mplusp/pack-manager.nvim",
-  cond = function()
-    return vim.fn.has('nvim-0.12') == 1 and vim.pack ~= nil
-  end,
-}
-```
-
-**packer.nvim:**
-```lua
-use {
-  "mplusp/pack-manager.nvim",
-  cond = function()
-    return vim.fn.has('nvim-0.12') == 1 and vim.pack ~= nil
-  end,
-}
 ```
 
 ## Features
@@ -135,19 +111,12 @@ Shows detailed information about a specific plugin or all plugins if no name is 
 
 ### Plugin Removal
 
-#### `:PackDel <plugin_name>`
+#### `:PackDelTemp <plugin_name>`
 Removes a plugin from disk temporarily. The plugin will be reinstalled on next Neovim restart if its configuration still exists.
 
 - Tab completion available
 - Confirmation prompt required
 - Safe for testing plugin removal
-
-#### `:PackDelComplete <plugin_name>`
-Removes a plugin and displays detailed cleanup instructions for permanent removal.
-
-- Shows what files need to be manually cleaned up
-- Includes require statement locations
-- Good for learning the cleanup process
 
 #### `:PackDelFull <plugin_name>`
 Completely removes a plugin including its configuration files and require statements.
@@ -258,7 +227,7 @@ This ensures compatibility between `vim.pack.get()` names and actual config file
 2. **Use `:PackDisableInactive`** to safely clean up unused plugins
 3. **Always review** the list of plugins before bulk operations
 4. **Keep backups** of your configuration before major cleanup operations
-5. **Test plugin removal** with `:PackDel` before permanent removal
+5. **Test plugin removal** with `:PackDelTemp` before permanent removal
 
 ## Programmatic Usage
 
@@ -280,7 +249,7 @@ pack_manager.list_inactive_plugins()
 ## Troubleshooting
 
 ### Plugin reinstalls after removal
-This happens when the plugin's config file still exists. Use `:PackDisable` or `:PackDelFull` instead of `:PackDel`.
+This happens when the plugin's config file still exists. Use `:PackDisable` or `:PackDelFull` instead of `:PackDelTemp`.
 
 ### Config file not found
 The plugin assumes config files are in `lua/plugins/`. Adjust your structure or manually clean up files in different locations.

@@ -84,44 +84,6 @@ local function remove_plugin_interactive()
   end
 end
 
--- Complete plugin removal with cleanup reminders
-local function remove_plugin_completely(plugin_name)
-  -- Check if plugin exists
-  local plugins = vim.pack.get()
-  local found = false
-
-  for _, plugin in ipairs(plugins) do
-    local name = plugin.spec and plugin.spec.name or ""
-    local src = plugin.spec and plugin.spec.src or ""
-    if name == plugin_name or src:match(plugin_name) then
-      found = true
-      break
-    end
-  end
-
-  if not found then
-    print("Plugin not found:", plugin_name)
-    return
-  end
-
-  local confirm = vim.fn.input("Remove plugin '" .. plugin_name .. "' and show cleanup instructions? (y/N): ")
-  if confirm:lower() ~= 'y' then
-    print("Cancelled")
-    return
-  end
-
-  -- Remove the plugin
-  vim.pack.del({ plugin_name })
-
-  -- Clean up any related configuration
-  print("Removed plugin:", plugin_name)
-  print("IMPORTANT: To prevent reinstallation on restart, you must also:")
-  print("1. Remove/comment the vim.pack.add() call from lua/plugins/" .. plugin_name .. ".lua")
-  print("2. Remove the require() call from init.lua")
-  print("3. Remove any plugin-specific keymaps and autocmds")
-  print("4. Or simply delete the entire plugin file: lua/plugins/" .. plugin_name .. ".lua")
-end
-
 -- Remove all plugins matching a pattern
 local function remove_plugins_by_pattern(pattern)
   local plugins = vim.pack.get()
@@ -750,10 +712,27 @@ create_plugin_config = function(plugin_name, plugin_url, options)
     add_require_to_init(normalized_name)
   end
 
-  -- Set colorscheme if it's a colorscheme plugin and user opted in
+  -- Note: We don't apply the colorscheme immediately here because:
+  -- 1. The plugin hasn't been loaded yet (vim.pack.add hasn't run)
+  -- 2. The require statement hasn't been executed yet
+  -- The colorscheme will be applied when the config file is loaded on next startup
+  -- or if the user manually sources the config file
   if plugin_data.info.has_colorscheme_command and options.set_colorscheme then
-    vim.cmd.colorscheme(normalized_name)
-    print("Applied colorscheme: " .. normalized_name)
+    print("\nColorscheme activation added to config.")
+    print("The colorscheme will be applied on next Neovim restart.")
+
+    -- Offer to load it now
+    local load_now = vim.fn.input("Load and apply the colorscheme now? (y/N): ")
+    if load_now:lower() == 'y' then
+      -- Source the config file to load the plugin and apply colorscheme
+      local ok, err = pcall(vim.cmd, 'source ' .. config_file)
+      if ok then
+        print("Colorscheme loaded and applied!")
+      else
+        print("Failed to load colorscheme: " .. tostring(err))
+        print("The colorscheme will be available after restarting Neovim.")
+      end
+    end
   end
 
   return plugin_data
@@ -901,21 +880,22 @@ function M.setup()
     end
   end, {})
 
-  -- Remove a specific plugin with tab completion
-  vim.api.nvim_create_user_command('PackDel', function(opts)
+  -- Remove a specific plugin temporarily (will reinstall on restart)
+  vim.api.nvim_create_user_command('PackDelTemp', function(opts)
     if opts.args == "" then
-      print("Usage: :PackDel <plugin_name>")
+      print("Usage: :PackDelTemp <plugin_name>")
       return
     end
 
-    local confirm = vim.fn.input("Remove plugin '" .. opts.args .. "' from disk? (will reinstall on restart) (y/N): ")
+    local confirm = vim.fn.input("Remove plugin '" .. opts.args .. "' from disk temporarily? (will reinstall on restart) (y/N): ")
     if confirm:lower() ~= 'y' then
       print("Cancelled")
       return
     end
 
     vim.pack.del({ opts.args })
-    print("Removed plugin:", opts.args)
+    print("Temporarily removed plugin:", opts.args)
+    print("The plugin will be reinstalled on next Neovim restart unless config is removed.")
   end, {
     nargs = 1,
     complete = function()
@@ -931,27 +911,6 @@ function M.setup()
 
   -- Interactive plugin removal command
   vim.api.nvim_create_user_command('PackRemove', remove_plugin_interactive, {})
-
-  -- Remove plugin with cleanup reminders
-  vim.api.nvim_create_user_command('PackDelComplete', function(opts)
-    if opts.args == "" then
-      print("Usage: :PackDelComplete <plugin_name>")
-      return
-    end
-
-    remove_plugin_completely(opts.args)
-  end, {
-    nargs = 1,
-    complete = function()
-      local plugins = vim.pack.get()
-      local names = {}
-      for i, plugin in ipairs(plugins) do
-        local name = plugin.spec and plugin.spec.name or "Unknown Plugin " .. i
-        table.insert(names, name)
-      end
-      return names
-    end
-  })
 
   -- Remove plugins by pattern
   vim.api.nvim_create_user_command('PackDelPattern', function(opts)
@@ -1124,7 +1083,6 @@ end
 -- Export functions for programmatic use
 M.safe_remove_plugin = safe_remove_plugin
 M.remove_plugin_interactive = remove_plugin_interactive
-M.remove_plugin_completely = remove_plugin_completely
 M.remove_plugins_by_pattern = remove_plugins_by_pattern
 M.remove_plugin_and_config = remove_plugin_and_config
 M.disable_plugin = disable_plugin
