@@ -267,9 +267,84 @@ The plugin looks for patterns like `require('config.plugins.plugin-name')`. If y
 ### Permission errors
 Ensure Neovim has write permissions to your config directory and plugin installation directories.
 
-## Contributing
+## Development
 
-This plugin was designed for personal use with a specific configuration structure. Feel free to modify it for your needs or submit improvements.
+### Running Tests
+
+The plugin includes a comprehensive test suite using the `busted` testing framework.
+
+**Prerequisites:**
+```bash
+# Install luarocks if not already installed
+brew install luarocks  # macOS
+# or
+sudo apt-get install luarocks  # Ubuntu
+
+# Install testing dependencies
+make install-deps
+```
+
+**Running tests:**
+```bash
+# Run all tests
+make test
+
+# Run tests with coverage
+make test-coverage
+
+# Run tests continuously (requires entr)
+make test-watch
+
+# Run linter
+make lint
+
+# Or use the test script
+./scripts/test.sh
+```
+
+**Test structure:**
+```
+tests/
+├── minimal_init.lua          # Test environment setup
+└── pack-manager/
+    ├── utils_spec.lua        # Utility function tests
+    └── init_spec.lua         # Main module tests
+```
+
+### Project Structure
+
+```
+pack-manager.nvim/
+├── lua/
+│   └── pack-manager/
+│       ├── init.lua          # Main plugin logic
+│       └── utils.lua         # Utility functions
+├── plugin/
+│   └── pack-manager.lua      # Plugin loader
+├── doc/
+│   └── pack-manager.txt      # Help documentation
+├── tests/                    # Test suite
+├── scripts/
+│   └── test.sh              # Test runner script
+├── .github/workflows/        # CI configuration
+├── Makefile                  # Build automation
+└── README.md
+```
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass: `make test`
+5. Run the linter: `make lint`
+6. Submit a pull request
+
+**Code style:**
+- Follow existing Lua conventions
+- Add tests for new functions
+- Update documentation for new commands
+- Use descriptive commit messages
 
 ## License
 
