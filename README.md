@@ -34,7 +34,7 @@ Add to your plugin configuration:
 
 ```lua
 vim.pack.add({
-  "mplusp/pack-manager.nvim"
+  "https://github.com/mplusp/pack-manager.nvim"
 })
 ```
 
