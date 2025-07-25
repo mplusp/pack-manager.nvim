@@ -1,0 +1,66 @@
+*pack-manager.txt*    Enhanced commands for Neovim's built-in vim.pack manager
+
+PACK-MANAGER.NVIM                                            *pack-manager.nvim*
+
+Enhanced commands for Neovim's built-in `vim.pack` plugin manager.
+
+==============================================================================
+CONTENTS                                              *pack-manager-contents*
+
+    1. Introduction ................................. |pack-manager-intro|
+    2. Requirements ................................. |pack-manager-requirements|
+    3. Commands ..................................... |pack-manager-commands|
+    4. Configuration ................................ |pack-manager-config|
+
+==============================================================================
+1. INTRODUCTION                                          *pack-manager-intro*
+
+pack-manager.nvim provides enhanced commands for managing plugins installed
+via Neovim 0.12+'s built-in `vim.pack` system. It offers safe removal,
+disable/enable functionality, and bulk operations for inactive plugins.
+
+==============================================================================
+2. REQUIREMENTS                                    *pack-manager-requirements*
+
+- Neovim 0.12+ (nightly builds)
+- Built-in `vim.pack` functionality
+
+==============================================================================
+3. COMMANDS                                           *pack-manager-commands*
+
+Basic Commands:~
+    :PackList                   List all plugins with status
+    :PackCount                  Show total plugin count
+    :PackInfo [name]            Show plugin information
+
+Removal Commands:~
+    :PackDel <name>             Remove plugin temporarily
+    :PackDelComplete <name>     Remove with cleanup instructions  
+    :PackDelFull <name>         Permanently remove plugin and config
+    :PackRemove                 Interactive removal menu
+    :PackDelPattern <pattern>   Remove plugins matching pattern
+
+Disable/Enable Commands:~
+    :PackDisable <name>         Disable plugin (reversible)
+    :PackEnable <name>          Re-enable disabled plugin
+    :PackListDisabled           List disabled plugins
+
+Inactive Plugin Commands:~
+    :PackListInactive           List inactive plugins
+    :PackDelInactive            Remove all inactive plugins
+    :PackDisableInactive        Disable all inactive plugins
+
+==============================================================================
+4. CONFIGURATION                                       *pack-manager-config*
+
+No configuration required. The plugin automatically sets up all commands
+when loaded.
+
+For programmatic access:
+>
+    local pack_manager = require('pack-manager')
+    pack_manager.disable_plugin('plugin-name')
+<
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
