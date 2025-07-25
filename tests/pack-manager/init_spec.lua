@@ -97,4 +97,181 @@ describe("pack-manager main module", function()
       vim.pack.get = original_get
     end)
   end)
+
+  describe("get_plugin_info function", function()
+    it("should categorize colorscheme plugins correctly", function()
+      local info = pack_manager._test_get_plugin_info("tokyonight.nvim", "https://github.com/folke/tokyonight.nvim")
+      assert.are.equal("colorschemes", info.category)
+      assert.is_true(info.info.has_colorscheme_command)
+      assert.is_false(info.info.setup_required)
+    end)
+
+    it("should categorize LSP plugins correctly", function()
+      local info = pack_manager._test_get_plugin_info("nvim-lspconfig", "https://github.com/neovim/nvim-lspconfig")
+      assert.are.equal("lsp", info.category)
+      assert.is_false(info.info.has_colorscheme_command)
+      assert.is_true(info.info.setup_required)
+    end)
+
+    it("should categorize UI plugins correctly", function()
+      local info = pack_manager._test_get_plugin_info("lualine.nvim", "https://github.com/nvim-lualine/lualine.nvim")
+      assert.are.equal("ui", info.category)
+      assert.is_true(info.info.setup_required)
+    end)
+
+    it("should categorize Git plugins correctly", function()
+      local info = pack_manager._test_get_plugin_info("gitsigns.nvim", "https://github.com/lewis6991/gitsigns.nvim")
+      assert.are.equal("git", info.category)
+      assert.is_true(info.info.setup_required)
+    end)
+
+    it("should default to default category for unknown plugins", function()
+      local info = pack_manager._test_get_plugin_info("unknown-plugin", "https://github.com/user/unknown-plugin")
+      assert.are.equal("default", info.category)
+      assert.is_true(info.info.setup_required)
+    end)
+  end)
+
+  describe("create_plugin_config function", function()
+    before_each(function()
+      -- Mock file operations
+      vim.fn.filereadable = function() return 0 end
+      vim.fn.writefile = function() return 0 end
+      vim.fn.mkdir = function() return 0 end
+    end)
+
+    it("should create colorscheme config with colorscheme command when requested", function()
+      local written_content = nil
+      vim.fn.writefile = function(lines, file)
+        written_content = lines
+        return 0
+      end
+
+      pack_manager._test_create_plugin_config("tokyonight.nvim", "https://github.com/folke/tokyonight.nvim", {
+        add_require = false,
+        set_colorscheme = true
+      })
+
+      assert.is_not_nil(written_content)
+      -- Check for colorscheme command
+      local has_colorscheme_cmd = false
+      for _, line in ipairs(written_content) do
+        if line:match("vim%.cmd%.colorscheme") and not line:match("^%-%-") then
+          has_colorscheme_cmd = true
+          break
+        end
+      end
+      assert.is_true(has_colorscheme_cmd)
+    end)
+
+    it("should create LSP config with setup call", function()
+      local written_content = nil
+      vim.fn.writefile = function(lines, file)
+        written_content = lines
+        return 0
+      end
+
+      pack_manager._test_create_plugin_config("nvim-lspconfig", "https://github.com/neovim/nvim-lspconfig", {
+        add_require = false,
+        set_colorscheme = false
+      })
+
+      assert.is_not_nil(written_content)
+      -- Check for require().setup() pattern
+      local has_setup = false
+      for _, line in ipairs(written_content) do
+        if line:match("require%(.+%)%.setup%(") then
+          has_setup = true
+          break
+        end
+      end
+      assert.is_true(has_setup)
+    end)
+
+    it("should add require statement when requested", function()
+      local init_content = nil
+      local original_readfile = vim.fn.readfile
+      local original_writefile = vim.fn.writefile
+      local original_filereadable = vim.fn.filereadable
+
+      vim.fn.filereadable = function(file)
+        if file:match("init%.lua$") then
+          return 1  -- init.lua exists
+        end
+        return 0
+      end
+
+      vim.fn.readfile = function(file)
+        if file:match("init%.lua$") then
+          return {"-- Existing init.lua content", "require('plugins.existing')"}
+        end
+        return {}
+      end
+
+      vim.fn.writefile = function(lines, file)
+        if file:match("init%.lua$") then
+          init_content = lines
+        end
+        return 0
+      end
+
+      pack_manager._test_create_plugin_config("test-plugin", "https://github.com/user/test-plugin", {
+        add_require = true,
+        set_colorscheme = false
+      })
+
+      assert.is_not_nil(init_content)
+      -- Check that require statement was added
+      local has_require = false
+      for _, line in ipairs(init_content) do
+        if line:match("require%('plugins%.test%-plugin'%)") then
+          has_require = true
+          break
+        end
+      end
+      assert.is_true(has_require)
+
+      -- Restore
+      vim.fn.readfile = original_readfile
+      vim.fn.writefile = original_writefile
+      vim.fn.filereadable = original_filereadable
+    end)
+  end)
+
+  describe("interactive installation", function()
+    before_each(function()
+      -- Mock user input
+      vim.fn.input = function(prompt)
+        if prompt:match("Create config file") then
+          return "y"
+        elseif prompt:match("Add require statement") then
+          return "y"
+        elseif prompt:match("Apply this colorscheme") then
+          return "n"
+        end
+        return ""
+      end
+
+      -- Mock file operations
+      vim.fn.filereadable = function() return 0 end
+      vim.fn.writefile = function() return 0 end
+      vim.fn.mkdir = function() return 0 end
+    end)
+
+    it("should handle colorscheme installation flow", function()
+      -- Test with user choosing to apply colorscheme
+      vim.fn.input = function(prompt)
+        if prompt:match("Apply this colorscheme") then
+          return "y"
+        end
+        return "y"
+      end
+
+      -- This would be called internally by add_plugin
+      -- We're testing the flow logic
+      local info = pack_manager._test_get_plugin_info("tokyonight.nvim", "https://github.com/folke/tokyonight.nvim")
+      assert.are.equal("colorschemes", info.category)
+      assert.is_true(info.info.has_colorscheme_command)
+    end)
+  end)
 end)

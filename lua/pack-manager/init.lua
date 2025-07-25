@@ -732,6 +732,15 @@ create_plugin_config = function(plugin_name, plugin_url, options)
   local plugin_data = get_plugin_info(plugin_name, plugin_url)
   local config_content = plugin_data.info.config_template(plugin_name, plugin_url, normalized_name)
 
+  -- If it's a colorscheme and user wants to set it, uncomment the colorscheme line
+  if plugin_data.info.has_colorscheme_command and options.set_colorscheme then
+    for i, line in ipairs(config_content) do
+      if line:match("^%-%- vim%.cmd%.colorscheme") then
+        config_content[i] = line:gsub("^%-%- ", "")
+      end
+    end
+  end
+
   -- Write config file
   vim.fn.writefile(config_content, config_file)
   print("Created config file: " .. config_file)
@@ -1126,5 +1135,11 @@ M.disable_inactive_plugins = disable_inactive_plugins
 M.list_inactive_plugins = list_inactive_plugins
 M.add_plugin = add_plugin
 M.quick_install_plugin = quick_install_plugin
+
+-- Export test-only functions (only exposed for testing)
+if _G._TEST then
+  M._test_get_plugin_info = get_plugin_info
+  M._test_create_plugin_config = create_plugin_config
+end
 
 return M

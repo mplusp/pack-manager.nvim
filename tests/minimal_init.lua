@@ -1,5 +1,8 @@
 -- Minimal init for testing pack-manager.nvim
 
+-- Set test flag
+_G._TEST = true
+
 -- Create global vim table if it doesn't exist
 vim = vim or {}
 
@@ -93,3 +96,10 @@ end
 
 -- Mock vim.g for plugin loading guard
 vim.g = vim.g or {}
+
+-- Mock vim.cmd
+vim.cmd = vim.cmd or {
+  colorscheme = function(name)
+    -- Mock implementation
+  end
+}
