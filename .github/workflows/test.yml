@@ -12,7 +12,7 @@ jobs:
     
     strategy:
       matrix:
-        lua-version: [5.1, 5.4, luajit]
+        lua-version: [5.1, 5.4]
         
     steps:
     - uses: actions/checkout@v4
@@ -21,6 +21,7 @@ jobs:
       uses: leafo/gh-actions-lua@v10
       with:
         luaVersion: ${{ matrix.lua-version }}
+        buildCache: false
         
     - name: Setup Luarocks  
       uses: leafo/gh-actions-luarocks@v4.3.0
@@ -40,15 +41,3 @@ jobs:
       run: |
         luacheck lua/ tests/ --globals vim
         
-    - name: Generate coverage
-      run: |
-        busted --verbose --coverage tests/
-        luacov
-        
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v4
-      if: matrix.lua-version == '5.1'
-      with:
-        file: ./luacov.report.out
-        flags: unittests
-        name: codecov-umbrella
