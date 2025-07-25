@@ -60,6 +60,23 @@ Inactive Plugin Commands:~
 No configuration required. The plugin automatically sets up all commands
 when loaded.
 
+Configuration Structure:~
+The plugin assumes this directory structure:
+>
+    ~/.config/nvim/
+    ├── init.lua                     (contains require statements)
+    ├── lua/
+    │   └── plugins/
+    │       ├── plugin1.lua          (individual plugin configs)
+    │       ├── plugin2.lua
+    │       └── disabled/            (disabled plugin configs)
+    │           ├── plugin3.lua
+    │           └── plugin4.lua
+<
+
+Each plugin config file should contain a `vim.pack.add()` call and the
+plugin's setup configuration.
+
 For programmatic access:
 >
     local pack_manager = require('pack-manager')

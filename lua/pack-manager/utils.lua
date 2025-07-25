@@ -3,6 +3,12 @@
 
 local M = {}
 
+-- Path constants - centralized configuration
+local CONFIG_DIR = vim.fn.stdpath('config')
+local PLUGINS_DIR = CONFIG_DIR .. "/lua/plugins"
+local DISABLED_DIR = PLUGINS_DIR .. "/disabled"
+local INIT_FILE = CONFIG_DIR .. "/init.lua"
+
 -- Helper function to normalize plugin name for file/require paths
 function M.normalize_plugin_name(plugin_name)
   -- Remove common suffixes like .nvim, .vim, .lua
@@ -12,7 +18,7 @@ end
 
 -- Parse plugin specification into components
 function M.parse_plugin_spec(plugin_spec)
-  local plugin_url, plugin_name, plugin_version
+  local plugin_url, plugin_name
   
   -- Handle different input formats
   if plugin_spec:match("^https?://") then
@@ -35,7 +41,7 @@ function M.parse_plugin_spec(plugin_spec)
   return {
     url = plugin_url,
     name = plugin_name,
-    version = plugin_version or "main"
+    version = "main"
   }, nil
 end
 
@@ -81,8 +87,7 @@ end
 
 -- Get list of disabled plugins (from disabled folder)
 function M.get_disabled_plugins()
-  local disabled_dir = vim.fn.stdpath('config') .. "/lua/config/plugins/disabled"
-  local disabled_files = vim.fn.glob(disabled_dir .. "/*.lua", false, true)
+  local disabled_files = vim.fn.glob(DISABLED_DIR .. "/*.lua", false, true)
   local disabled_plugins = {}
 
   for _, file in ipairs(disabled_files) do
@@ -106,17 +111,35 @@ function M.validate_plugin_name(name)
   return true, nil
 end
 
+-- Path construction functions using centralized constants
+
+-- Get base directories
+function M.get_config_dir()
+  return CONFIG_DIR
+end
+
+function M.get_plugins_dir()
+  return PLUGINS_DIR
+end
+
+function M.get_disabled_dir()
+  return DISABLED_DIR
+end
+
+function M.get_init_file()
+  return INIT_FILE
+end
+
 -- Create file path for plugin config
 function M.get_plugin_config_path(plugin_name)
   local normalized_name = M.normalize_plugin_name(plugin_name)
-  return vim.fn.stdpath('config') .. "/lua/config/plugins/" .. normalized_name .. ".lua"
+  return PLUGINS_DIR .. "/" .. normalized_name .. ".lua"
 end
 
 -- Create file path for disabled plugin config
 function M.get_disabled_config_path(plugin_name)
   local normalized_name = M.normalize_plugin_name(plugin_name)
-  local disabled_dir = vim.fn.stdpath('config') .. "/lua/config/plugins/disabled"
-  return disabled_dir .. "/" .. normalized_name .. ".lua"
+  return DISABLED_DIR .. "/" .. normalized_name .. ".lua"
 end
 
 return M

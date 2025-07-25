@@ -115,17 +115,34 @@ describe("pack-manager utils", function()
   describe("get_plugin_config_path", function()
     it("should generate correct config paths", function()
       local path = utils.get_plugin_config_path("tokyonight.nvim")
-      assert.is_true(path:match("/lua/config/plugins/tokyonight%.lua$"))
+      assert.is_true(path:match("/lua/plugins/tokyonight%.lua$") ~= nil)
       
       path = utils.get_plugin_config_path("telescope")
-      assert.is_true(path:match("/lua/config/plugins/telescope%.lua$"))
+      assert.is_true(path:match("/lua/plugins/telescope%.lua$") ~= nil)
     end)
   end)
 
   describe("get_disabled_config_path", function()
     it("should generate correct disabled config paths", function()
       local path = utils.get_disabled_config_path("gitsigns.nvim")
-      assert.is_true(path:match("/lua/config/plugins/disabled/gitsigns%.lua$"))
+      assert.is_true(path:match("/lua/plugins/disabled/gitsigns%.lua$") ~= nil)
+    end)
+  end)
+
+  describe("path getters", function()
+    it("should return proper base directories", function()
+      local config_dir = utils.get_config_dir()
+      assert.is_string(config_dir)
+      assert.is_true(config_dir:len() > 0)
+      
+      local plugins_dir = utils.get_plugins_dir()
+      assert.is_true(plugins_dir:match("/lua/plugins$") ~= nil)
+      
+      local disabled_dir = utils.get_disabled_dir()
+      assert.is_true(disabled_dir:match("/lua/plugins/disabled$") ~= nil)
+      
+      local init_file = utils.get_init_file()
+      assert.is_true(init_file:match("/init%.lua$") ~= nil)
     end)
   end)
 

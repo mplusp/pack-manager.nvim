@@ -199,13 +199,12 @@ This plugin assumes your Neovim configuration follows this structure:
 ~/.config/nvim/
 ├── init.lua                     # Contains require statements
 ├── lua/
-│   └── config/
-│       └── plugins/
-│           ├── plugin1.lua      # Individual plugin configs
-│           ├── plugin2.lua
-│           └── disabled/        # Disabled plugin configs
-│               ├── plugin3.lua
-│               └── plugin4.lua
+│   └── plugins/
+│       ├── plugin1.lua          # Individual plugin configs
+│       ├── plugin2.lua
+│       └── disabled/            # Disabled plugin configs
+│           ├── plugin3.lua
+│           └── plugin4.lua
 ```
 
 Each plugin config file should contain a `vim.pack.add()` call and the plugin's setup.
@@ -259,10 +258,10 @@ pack_manager.list_inactive_plugins()
 This happens when the plugin's config file still exists. Use `:PackDisable` or `:PackDelFull` instead of `:PackDel`.
 
 ### Config file not found
-The plugin assumes config files are in `lua/config/plugins/`. Adjust your structure or manually clean up files in different locations.
+The plugin assumes config files are in `lua/plugins/`. Adjust your structure or manually clean up files in different locations.
 
 ### Require statement not removed
-The plugin looks for patterns like `require('config.plugins.plugin-name')`. If your require statements use a different pattern, you'll need to manually remove them.
+The plugin looks for patterns like `require('plugins.plugin-name')`. If your require statements use a different pattern, you'll need to manually remove them.
 
 ### Permission errors
 Ensure Neovim has write permissions to your config directory and plugin installation directories.

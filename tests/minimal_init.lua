@@ -1,7 +1,10 @@
 -- Minimal init for testing pack-manager.nvim
 
+-- Create global vim table if it doesn't exist
+vim = vim or {}
+
 -- Set up package path for testing
-local pack_manager_path = vim.fn.getcwd()
+local pack_manager_path = vim.fn and vim.fn.getcwd() or "."
 package.path = pack_manager_path .. "/lua/?.lua;" .. package.path
 
 -- Mock vim.pack for testing

@@ -1,14 +1,8 @@
 -- pack-manager.nvim
 -- Enhanced commands for Neovim's built-in vim.pack plugin manager
 
+local utils = require('pack-manager.utils')
 local M = {}
-
--- Helper function to normalize plugin name for file/require paths
-local function normalize_plugin_name(plugin_name)
-  -- Remove common suffixes like .nvim, .vim, .lua
-  local normalized = plugin_name:gsub("%.nvim$", ""):gsub("%.vim$", ""):gsub("%.lua$", "")
-  return normalized
-end
 
 -- Safe removal - check if plugin is installed first
 local function safe_remove_plugin(plugin_name)
@@ -115,10 +109,10 @@ local function remove_plugin_completely(plugin_name)
   -- Clean up any related configuration
   print("Removed plugin:", plugin_name)
   print("IMPORTANT: To prevent reinstallation on restart, you must also:")
-  print("1. Remove/comment the vim.pack.add() call from lua/config/plugins/" .. plugin_name .. ".lua")
+  print("1. Remove/comment the vim.pack.add() call from lua/plugins/" .. plugin_name .. ".lua")
   print("2. Remove the require() call from init.lua")
   print("3. Remove any plugin-specific keymaps and autocmds")
-  print("4. Or simply delete the entire plugin file: lua/config/plugins/" .. plugin_name .. ".lua")
+  print("4. Or simply delete the entire plugin file: lua/plugins/" .. plugin_name .. ".lua")
 end
 
 -- Remove all plugins matching a pattern
@@ -172,8 +166,8 @@ local function remove_plugin_and_config(plugin_name)
     return
   end
 
-  local normalized_name = normalize_plugin_name(plugin_name)
-  local config_file = vim.fn.stdpath('config') .. "/lua/config/plugins/" .. normalized_name .. ".lua"
+  local normalized_name = utils.normalize_plugin_name(plugin_name)
+  local config_file = utils.get_plugin_config_path(plugin_name)
 
   print("This will PERMANENTLY remove:")
   print("- Plugin from disk: " .. plugin_name)
@@ -198,10 +192,10 @@ local function remove_plugin_and_config(plugin_name)
   end
 
   -- Remove require line from init.lua
-  local init_file = vim.fn.stdpath('config') .. "/init.lua"
+  local init_file = utils.get_init_file()
   if vim.fn.filereadable(init_file) == 1 then
     local lines = vim.fn.readfile(init_file)
-    local require_pattern = "require%('config%.plugins%." .. normalized_name:gsub("%-", "%%-") .. "'%)"
+    local require_pattern = "require%('plugins%." .. normalized_name:gsub("%-", "%%-") .. "'%)"
     local new_lines = {}
     local removed_line = false
 
@@ -218,7 +212,7 @@ local function remove_plugin_and_config(plugin_name)
       vim.fn.writefile(new_lines, init_file)
       print("Updated init.lua")
     else
-      print("No matching require line found in init.lua for pattern: config.plugins." .. normalized_name)
+      print("No matching require line found in init.lua for pattern: plugins." .. normalized_name)
     end
   end
 
@@ -245,10 +239,10 @@ local function disable_plugin(plugin_name)
     return
   end
 
-  local normalized_name = normalize_plugin_name(plugin_name)
-  local config_file = vim.fn.stdpath('config') .. "/lua/config/plugins/" .. normalized_name .. ".lua"
-  local disabled_dir = vim.fn.stdpath('config') .. "/lua/config/plugins/disabled"
-  local disabled_file = disabled_dir .. "/" .. normalized_name .. ".lua"
+  local normalized_name = utils.normalize_plugin_name(plugin_name)
+  local config_file = utils.get_plugin_config_path(plugin_name)
+  local disabled_dir = utils.get_disabled_dir()
+  local disabled_file = utils.get_disabled_config_path(plugin_name)
 
   print("This will disable plugin (reversible):")
   print("- Remove from disk: " .. plugin_name)
@@ -279,10 +273,10 @@ local function disable_plugin(plugin_name)
   end
 
   -- Remove require line from init.lua
-  local init_file = vim.fn.stdpath('config') .. "/init.lua"
+  local init_file = utils.get_init_file()
   if vim.fn.filereadable(init_file) == 1 then
     local lines = vim.fn.readfile(init_file)
-    local require_pattern = "require%('config%.plugins%." .. normalized_name:gsub("%-", "%%-") .. "'%)"
+    local require_pattern = "require%('plugins%." .. normalized_name:gsub("%-", "%%-") .. "'%)"
     local new_lines = {}
     local removed_line = false
 
@@ -299,7 +293,7 @@ local function disable_plugin(plugin_name)
       vim.fn.writefile(new_lines, init_file)
       print("Updated init.lua")
     else
-      print("No matching require line found in init.lua for pattern: config.plugins." .. normalized_name)
+      print("No matching require line found in init.lua for pattern: plugins." .. normalized_name)
     end
   end
 
@@ -309,10 +303,9 @@ end
 
 -- Enable plugin by moving config back from disabled folder
 local function enable_plugin(plugin_name)
-  local normalized_name = normalize_plugin_name(plugin_name)
-  local config_file = vim.fn.stdpath('config') .. "/lua/config/plugins/" .. normalized_name .. ".lua"
-  local disabled_dir = vim.fn.stdpath('config') .. "/lua/config/plugins/disabled"
-  local disabled_file = disabled_dir .. "/" .. normalized_name .. ".lua"
+  local normalized_name = utils.normalize_plugin_name(plugin_name)
+  local config_file = utils.get_plugin_config_path(plugin_name)
+  local disabled_file = utils.get_disabled_config_path(plugin_name)
 
   if vim.fn.filereadable(disabled_file) ~= 1 then
     print("Disabled plugin config not found:", disabled_file)
@@ -339,7 +332,7 @@ local function enable_plugin(plugin_name)
   if vim.fn.rename(disabled_file, config_file) == 0 then
     print("Moved config file back: " .. config_file)
     print("Add this line to your init.lua:")
-    print("require('config.plugins." .. normalized_name .. "')")
+    print("require('plugins." .. normalized_name .. "')")
     print("Then restart Neovim or run :source % in init.lua")
   else
     print("Failed to move config file")
@@ -348,7 +341,7 @@ end
 
 -- List disabled plugins
 local function list_disabled_plugins()
-  local disabled_dir = vim.fn.stdpath('config') .. "/lua/config/plugins/disabled"
+  local disabled_dir = utils.get_disabled_dir()
   local disabled_files = vim.fn.glob(disabled_dir .. "/*.lua", false, true)
 
   if #disabled_files == 0 then
@@ -427,13 +420,13 @@ local function disable_inactive_plugins()
   end
 
   local disabled_count = 0
-  local disabled_dir = vim.fn.stdpath('config') .. "/lua/config/plugins/disabled"
+  local disabled_dir = utils.get_disabled_dir()
   vim.fn.mkdir(disabled_dir, "p")
 
   for _, plugin_name in ipairs(inactive_plugins) do
-    local normalized_name = normalize_plugin_name(plugin_name)
-    local config_file = vim.fn.stdpath('config') .. "/lua/config/plugins/" .. normalized_name .. ".lua"
-    local disabled_file = disabled_dir .. "/" .. normalized_name .. ".lua"
+    local normalized_name = utils.normalize_plugin_name(plugin_name)
+    local config_file = utils.get_plugin_config_path(plugin_name)
+    local disabled_file = utils.get_disabled_config_path(plugin_name)
 
     -- Move config file to disabled folder
     if vim.fn.filereadable(config_file) == 1 then
@@ -442,10 +435,10 @@ local function disable_inactive_plugins()
         disabled_count = disabled_count + 1
 
         -- Remove require line from init.lua
-        local init_file = vim.fn.stdpath('config') .. "/init.lua"
+        local init_file = utils.get_init_file()
         if vim.fn.filereadable(init_file) == 1 then
           local lines = vim.fn.readfile(init_file)
-          local require_pattern = "require%('config%.plugins%." .. normalized_name:gsub("%-", "%%-") .. "'%)"
+          local require_pattern = "require%('plugins%." .. normalized_name:gsub("%-", "%%-") .. "'%)"
           local new_lines = {}
 
           for _, line in ipairs(lines) do
@@ -494,7 +487,7 @@ end
 -- Add a new plugin
 local function add_plugin(plugin_spec)
   -- Parse the plugin specification
-  local plugin_url, plugin_name, plugin_version
+  local plugin_url, plugin_name
   
   -- Handle different input formats
   if plugin_spec:match("^https?://") then
@@ -541,7 +534,7 @@ local function add_plugin(plugin_spec)
     {
       src = plugin_url,
       name = plugin_name,
-      version = plugin_version or "main"
+      version = "main"
     }
   })
   
@@ -556,10 +549,10 @@ local function add_plugin(plugin_spec)
 end
 
 -- Create a basic config file for a new plugin
-local function create_plugin_config(plugin_name, plugin_url)
-  local normalized_name = normalize_plugin_name(plugin_name)
-  local config_file = vim.fn.stdpath('config') .. "/lua/config/plugins/" .. normalized_name .. ".lua"
-  local plugins_dir = vim.fn.stdpath('config') .. "/lua/config/plugins"
+function create_plugin_config(plugin_name, plugin_url)
+  local normalized_name = utils.normalize_plugin_name(plugin_name)
+  local config_file = utils.get_plugin_config_path(plugin_name)
+  local plugins_dir = utils.get_plugins_dir()
   
   -- Create plugins directory if it doesn't exist
   vim.fn.mkdir(plugins_dir, "p")
@@ -590,13 +583,13 @@ local function create_plugin_config(plugin_name, plugin_url)
     add_require_to_init(normalized_name)
   else
     print("Remember to add this line to your init.lua:")
-    print("require('config.plugins." .. normalized_name .. "')")
+    print("require('plugins." .. normalized_name .. "')")
   end
 end
 
 -- Add require statement to init.lua
-local function add_require_to_init(plugin_name)
-  local init_file = vim.fn.stdpath('config') .. "/init.lua"
+function add_require_to_init(plugin_name)
+  local init_file = utils.get_init_file()
   
   if vim.fn.filereadable(init_file) ~= 1 then
     print("init.lua not found at: " .. init_file)
@@ -604,11 +597,11 @@ local function add_require_to_init(plugin_name)
   end
   
   local lines = vim.fn.readfile(init_file)
-  local require_line = "require('config.plugins." .. plugin_name .. "')"
+  local require_line = "require('plugins." .. plugin_name .. "')"
   
   -- Check if require statement already exists
   for _, line in ipairs(lines) do
-    if line:match("require%('config%.plugins%." .. plugin_name:gsub("%-", "%%-") .. "'%)") then
+    if line:match("require%('plugins%." .. plugin_name:gsub("%-", "%%-") .. "'%)") then
       print("Require statement already exists in init.lua")
       return
     end
@@ -622,10 +615,10 @@ local function add_require_to_init(plugin_name)
     table.insert(new_lines, line)
     
     -- Insert after other plugin requires
-    if not inserted and line:match("require%('config%.plugins%.") then
+    if not inserted and line:match("require%('plugins%.") then
       -- Look ahead to see if next line is also a plugin require
       local next_line = lines[i + 1]
-      if not next_line or not next_line:match("require%('config%.plugins%.") then
+      if not next_line or not next_line:match("require%('plugins%.") then
         table.insert(new_lines, require_line)
         inserted = true
       end
@@ -896,7 +889,7 @@ function M.setup()
   end, {
     nargs = 1,
     complete = function()
-      local disabled_dir = vim.fn.stdpath('config') .. "/lua/config/plugins/disabled"
+      local disabled_dir = utils.get_disabled_dir()
       local disabled_files = vim.fn.glob(disabled_dir .. "/*.lua", false, true)
       local names = {}
       for _, file in ipairs(disabled_files) do
