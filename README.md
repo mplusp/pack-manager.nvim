@@ -52,43 +52,29 @@ vim.pack.add({
 
 ### Plugin Installation
 
-#### `:PackAdd <owner/repo>` or `:PackAdd <full-url>`
-Adds a new plugin using GitHub shorthand or full URL with intelligent configuration.
+#### `:PackAdd <plugin-name | owner/repo | full-url>`
+Unified command that handles all plugin installation methods with intelligent configuration.
 
 ```
-:PackAdd folke/tokyonight.nvim
-:PackAdd https://github.com/neovim/nvim-lspconfig.git
+:PackAdd mason                          # Common plugin name
+:PackAdd folke/tokyonight.nvim          # GitHub shorthand
+:PackAdd https://github.com/neovim/nvim-lspconfig.git  # Full URL
 ```
 
-After installation, plugins are immediately available in the current session - no restart required! For example, after `:PackInstall mason`, you can immediately run `:Mason` to open the Mason interface.
+After installation, plugins are immediately available in the current session - no restart required! For example, after `:PackAdd mason`, you can immediately run `:Mason` to open the Mason interface.
 
 Features:
+- **Multiple input formats** - Common plugin names, GitHub shorthand (`owner/repo`), or full URLs
+- **Tab completion** - Auto-complete common plugin names for faster installation
 - **Smart plugin detection** - Automatically categorizes plugins (colorschemes, LSP, UI, Git, etc.)
 - **Interactive configuration** - Guided setup process with context-aware prompts
 - **Automatic setup() calls** - Generates proper `require().setup()` calls for plugins that need them
 - **Immediate loading** - Plugins are loaded and available in current session after installation
 - **Colorscheme activation** - Option to immediately apply colorscheme plugins
 - **Intelligent templates** - Creates appropriate config files based on plugin type
-- GitHub shorthand (`owner/repo`) and full URL support
-- Duplicate installation checking
+- **Duplicate installation checking** - Prevents installing the same plugin twice
 
-#### `:PackInstall <plugin-name>`
-Quick install from a curated list of common plugins with intelligent configuration.
-
-```
-:PackInstall telescope
-:PackInstall lspconfig
-:PackInstall tokyonight
-```
-
-Features:
-- **Same smart installation** as `:PackAdd` with plugin categorization
-- **Context-aware configuration** - Different templates for different plugin types
-- **Immediate availability** - Plugins are loaded and usable right after installation
-- **Interactive setup** - Colorscheme plugins offer immediate activation
-- **Tab completion** for available plugins
-
-Includes popular plugins like:
+**Common Plugin Names** (with tab completion):
 - **LSP**: lspconfig, mason, lazydev, blink (auto-generates setup() calls)
 - **File Management**: telescope, nvim-tree, oil, fzf-lua (with setup() calls)
 - **Git**: gitsigns, fugitive (with setup() calls)
@@ -174,10 +160,6 @@ Installed plugins:
 Enter plugin number to remove (or 'q' to quit):
 ```
 
-#### `:PackDelPattern <pattern>`
-Removes all plugins matching a Lua pattern.
-
-Example: `:PackDelPattern treesitter` removes all plugins with "treesitter" in the name.
 
 ### Disable/Enable System (Recommended)
 

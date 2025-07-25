@@ -32,15 +32,11 @@ safe removal, disable/enable functionality, and bulk operations for inactive plu
 
 Installation Commands:~
                                                               *:PackAdd*
-    :PackAdd <spec>             Add plugin with intelligent configuration
-                                Supports GitHub shorthand (owner/repo) or full URLs
+    :PackAdd <spec>             Unified plugin installation command
+                                Supports common plugin names, GitHub shorthand 
+                                (owner/repo), or full URLs with tab completion
                                 Features immediate loading, automatic setup() calls
                                 and colorscheme activation
-                                
-                                                              *:PackInstall*
-    :PackInstall <name>         Quick install from curated plugin list
-                                Same smart features as :PackAdd including immediate
-                                loading and tab completion
 
 Update Commands:~
                                                               *:PackUpdate*
@@ -72,8 +68,6 @@ Removal Commands:~
                                                               *:PackRemove*
     :PackRemove                 Interactive removal with numbered menu
     
-                                                              *:PackDelPattern*
-    :PackDelPattern <pattern>   Remove plugins matching Lua pattern
 
 Disable/Enable Commands:~
                                                               *:PackDisable*
@@ -124,12 +118,10 @@ plugin's setup configuration.
 Plugin Installation:~
 >
     " Install with smart configuration (immediately available)
-    :PackAdd folke/tokyonight.nvim
-    
-    " Quick install common plugins (no restart needed)
-    :PackInstall telescope
-    :PackInstall mason    " :Mason command available right after installation
-    :PackInstall lspconfig
+    :PackAdd folke/tokyonight.nvim  " GitHub shorthand
+    :PackAdd mason                  " Common plugin name
+    :PackAdd telescope              " :Telescope command available right after
+    :PackAdd lspconfig              " LSP configuration
 <
 
 Plugin Updates:~

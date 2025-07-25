@@ -10,6 +10,7 @@ M.version = "0.3.0"
 local create_plugin_config
 local add_require_to_init
 local get_plugin_info
+local get_common_plugins
 
 -- Safe removal - check if plugin is installed first
 local function safe_remove_plugin(plugin_name)
@@ -84,36 +85,6 @@ local function remove_plugin_interactive()
   end
 end
 
--- Remove all plugins matching a pattern
-local function remove_plugins_by_pattern(pattern)
-  local plugins = vim.pack.get()
-  local to_remove = {}
-
-  for i, plugin in ipairs(plugins) do
-    local name = plugin.spec and plugin.spec.name or "Unknown Plugin " .. i
-    if string.match(name, pattern) then
-      table.insert(to_remove, name)
-    end
-  end
-
-  if #to_remove == 0 then
-    print("No plugins match pattern:", pattern)
-    return
-  end
-
-  print("Removing plugins matching '" .. pattern .. "':")
-  for _, name in ipairs(to_remove) do
-    print("- " .. name)
-  end
-
-  local confirm = vim.fn.input("Continue? (y/N): ")
-  if confirm:lower() == 'y' then
-    vim.pack.del(to_remove)
-    print("Removed " .. #to_remove .. " plugins")
-  else
-    print("Cancelled")
-  end
-end
 
 -- Completely remove plugin including config files
 local function remove_plugin_and_config(plugin_name)
@@ -455,22 +426,37 @@ end
 
 -- Add a new plugin
 local function add_plugin(plugin_spec)
-  -- Parse the plugin specification
   local plugin_url, plugin_name
-
-  -- Handle different input formats
-  if plugin_spec:match("^https?://") then
-    -- Full URL provided
-    plugin_url = plugin_spec
-    plugin_name = plugin_url:match("/([^/]+)%.git$") or plugin_url:match("/([^/]+)$")
-    plugin_name = plugin_name:gsub("%.git$", "")
-  elseif plugin_spec:match("^[%w_%-]+/[%w_%-%.]+") then
-    -- GitHub shorthand (owner/repo)
-    plugin_url = "https://github.com/" .. plugin_spec .. ".git"
-    plugin_name = plugin_spec:match("/([^/]+)$")
+  
+  -- First check if it's a common plugin name
+  local common_plugins = get_common_plugins()
+  local github_path = common_plugins[plugin_spec:lower()]
+  
+  if github_path then
+    -- It's a common plugin, convert to GitHub spec
+    plugin_url = "https://github.com/" .. github_path .. ".git"
+    plugin_name = github_path:match("/([^/]+)$")
+    print("Found common plugin: " .. plugin_spec .. " -> " .. github_path)
   else
-    print("Invalid plugin specification. Use 'owner/repo' or full URL.")
-    return
+    -- Parse as GitHub spec or URL
+    if plugin_spec:match("^https?://") then
+      -- Full URL provided
+      plugin_url = plugin_spec
+      plugin_name = plugin_url:match("/([^/]+)%.git$") or plugin_url:match("/([^/]+)$")
+      plugin_name = plugin_name:gsub("%.git$", "")
+    elseif plugin_spec:match("^[%w_%-]+/[%w_%-%.]+") then
+      -- GitHub shorthand (owner/repo)
+      plugin_url = "https://github.com/" .. plugin_spec .. ".git"
+      plugin_name = plugin_spec:match("/([^/]+)$")
+    else
+      print("Invalid plugin specification.")
+      print("Use common plugin name (e.g., 'mason', 'telescope') or GitHub spec (e.g., 'owner/repo').")
+      print("\nAvailable common plugins:")
+      for name, path in pairs(common_plugins) do
+        print("- " .. name .. " (" .. path .. ")")
+      end
+      return
+    end
   end
 
   if not plugin_name then
@@ -499,7 +485,8 @@ local function add_plugin(plugin_spec)
   end
 
   -- Parse plugin spec to get correct branch/version
-  local parsed_spec, err = utils.parse_plugin_spec(plugin_spec)
+  local spec_to_parse = github_path or plugin_spec
+  local parsed_spec, err = utils.parse_plugin_spec(spec_to_parse)
   if err then
     print("Error parsing plugin spec: " .. err)
     return
@@ -567,6 +554,68 @@ local function add_plugin(plugin_spec)
       print("  Edit the config file to customize plugin settings")
     end
   end
+end
+
+-- Get common plugins mapping
+get_common_plugins = function()
+  return {
+    -- LSP and completion
+    ["lspconfig"] = "neovim/nvim-lspconfig",
+    ["nvim-lspconfig"] = "neovim/nvim-lspconfig",
+    ["mason"] = "mason-org/mason.nvim",
+    ["mason.nvim"] = "mason-org/mason.nvim",
+    ["lazydev"] = "folke/lazydev.nvim",
+    ["lazydev.nvim"] = "folke/lazydev.nvim",
+    ["blink"] = "saghen/blink.cmp",
+    ["blink.cmp"] = "saghen/blink.cmp",
+
+    -- File management
+    ["telescope"] = "nvim-telescope/telescope.nvim",
+    ["telescope.nvim"] = "nvim-telescope/telescope.nvim",
+    ["nvim-tree"] = "nvim-tree/nvim-tree.lua",
+    ["nvm-tree"] = "nvim-tree/nvim-tree.lua",
+    ["oil"] = "stevearc/oil.nvim",
+    ["oil.nvim"] = "stevearc/oil.nvim",
+    ["fzf-lua"] = "ibhagwan/fzf-lua",
+    ["harpoon"] = "ThePrimeagen/harpoon",
+
+    -- Git
+    ["gitsigns"] = "lewis6991/gitsigns.nvim",
+    ["gitsigns.nvim"] = "lewis6991/gitsigns.nvim",
+    ["fugitive"] = "tpope/vim-fugitive",
+    ["vim-fugitive"] = "tpope/vim-fugitive",
+
+    -- UI enhancements
+    ["lualine"] = "nvim-lualine/lualine.nvim",
+    ["lualine.nvim"] = "nvim-lualine/lualine.nvim",
+    ["bufferline"] = "akinsho/bufferline.nvim",
+    ["bufferline.nvim"] = "akinsho/bufferline.nvim",
+    ["noice"] = "folke/noice.nvim",
+    ["noice.nvim"] = "folke/noice.nvim",
+
+    -- Development tools
+    ["nvim-lint"] = "mfussenegger/nvim-lint",
+    ["nvim-dap"] = "mfussenegger/nvim-dap",
+
+    -- Syntax and treesitter
+    ["treesitter"] = "nvim-treesitter/nvim-treesitter",
+    ["nvim-treesitter"] = "nvim-treesitter/nvim-treesitter",
+
+    -- Themes
+    ["tokyonight"] = "folke/tokyonight.nvim",
+    ["tokyonight.nvim"] = "folke/tokyonight.nvim",
+    ["catppuccin"] = "catppuccin/nvim",
+    ["gruvbox"] = "ellisonleao/gruvbox.nvim",
+    ["gruvbox.nvim"] = "ellisonleao/gruvbox.nvim",
+
+    -- Utilities
+    ["plenary"] = "nvim-lua/plenary.nvim",
+    ["plenary.nvim"] = "nvim-lua/plenary.nvim",
+    ["web-devicons"] = "nvim-tree/nvim-web-devicons",
+    ["nvim-web-devicons"] = "nvim-tree/nvim-web-devicons",
+    ["mini"] = "echasnovski/mini.nvim",
+    ["mini.nvim"] = "echasnovski/mini.nvim",
+  }
 end
 
 -- Plugin categorization for enhanced installation
@@ -822,80 +871,6 @@ add_require_to_init = function(plugin_name)
 end
 
 -- Quick install from common plugin sources
-local function quick_install_plugin(plugin_name)
-  local common_plugins = {
-    -- LSP and completion
-    ["lspconfig"] = "neovim/nvim-lspconfig",
-    ["nvim-lspconfig"] = "neovim/nvim-lspconfig",
-    ["mason"] = "mason-org/mason.nvim",
-    ["mason.nvim"] = "mason-org/mason.nvim",
-    ["lazydev"] = "folke/lazydev.nvim",
-    ["lazydev.nvim"] = "folke/lazydev.nvim",
-    ["blink"] = "saghen/blink.cmp",
-    ["blink.cmp"] = "saghen/blink.cmp",
-
-    -- File management
-    ["telescope"] = "nvim-telescope/telescope.nvim",
-    ["telescope.nvim"] = "nvim-telescope/telescope.nvim",
-    ["nvim-tree"] = "nvim-tree/nvim-tree.lua",
-    ["nvm-tree"] = "nvim-tree/nvim-tree.lua",
-    ["oil"] = "stevearc/oil.nvim",
-    ["oil.nvim"] = "stevearc/oil.nvim",
-    ["fzf-lua"] = "ibhagwan/fzf-lua",
-    ["harpoon"] = "ThePrimeagen/harpoon",
-
-    -- Git
-    ["gitsigns"] = "lewis6991/gitsigns.nvim",
-    ["gitsigns.nvim"] = "lewis6991/gitsigns.nvim",
-    ["fugitive"] = "tpope/vim-fugitive",
-    ["vim-fugitive"] = "tpope/vim-fugitive",
-
-    -- UI enhancements
-    ["lualine"] = "nvim-lualine/lualine.nvim",
-    ["lualine.nvim"] = "nvim-lualine/lualine.nvim",
-    ["bufferline"] = "akinsho/bufferline.nvim",
-    ["bufferline.nvim"] = "akinsho/bufferline.nvim",
-    ["noice"] = "folke/noice.nvim",
-    ["noice.nvim"] = "folke/noice.nvim",
-
-    -- Development tools
-    ["nvim-lint"] = "mfussenegger/nvim-lint",
-    ["nvim-dap"] = "mfussenegger/nvim-dap",
-
-    -- Syntax and treesitter
-    ["treesitter"] = "nvim-treesitter/nvim-treesitter",
-    ["nvim-treesitter"] = "nvim-treesitter/nvim-treesitter",
-
-    -- Themes
-    ["tokyonight"] = "folke/tokyonight.nvim",
-    ["tokyonight.nvim"] = "folke/tokyonight.nvim",
-    ["catppuccin"] = "catppuccin/nvim",
-    ["gruvbox"] = "ellisonleao/gruvbox.nvim",
-    ["gruvbox.nvim"] = "ellisonleao/gruvbox.nvim",
-
-    -- Utilities
-    ["plenary"] = "nvim-lua/plenary.nvim",
-    ["plenary.nvim"] = "nvim-lua/plenary.nvim",
-    ["web-devicons"] = "nvim-tree/nvim-web-devicons",
-    ["nvim-web-devicons"] = "nvim-tree/nvim-web-devicons",
-    ["mini"] = "echasnovski/mini.nvim",
-    ["mini.nvim"] = "echasnovski/mini.nvim",
-  }
-
-  local github_path = common_plugins[plugin_name:lower()]
-  if github_path then
-    print("Found common plugin: " .. plugin_name .. " -> " .. github_path)
-
-    -- Use enhanced add_plugin which now has interactive dialogs
-    add_plugin(github_path)
-  else
-    print("Plugin '" .. plugin_name .. "' not found in common plugins list.")
-    print("Available quick install plugins:")
-    for name, path in pairs(common_plugins) do
-      print("- " .. name .. " (" .. path .. ")")
-    end
-  end
-end
 
 -- Update a specific plugin or all plugins
 local function update_plugin(plugin_name)
@@ -1046,14 +1021,6 @@ function M.setup()
   vim.api.nvim_create_user_command('PackRemove', remove_plugin_interactive, {})
 
   -- Remove plugins by pattern
-  vim.api.nvim_create_user_command('PackDelPattern', function(opts)
-    if opts.args == "" then
-      print("Usage: :PackDelPattern <pattern>")
-      return
-    end
-
-    remove_plugins_by_pattern(opts.args)
-  end, { nargs = 1 })
 
   -- Show detailed plugin information
   vim.api.nvim_create_user_command('PackInfo', function(opts)
@@ -1173,43 +1140,30 @@ function M.setup()
   vim.api.nvim_create_user_command('PackDelInactive', remove_inactive_plugins, {})
   vim.api.nvim_create_user_command('PackDisableInactive', disable_inactive_plugins, {})
 
-  -- Plugin installation commands
+  -- Plugin installation command (combines PackAdd and PackInstall functionality)
   vim.api.nvim_create_user_command('PackAdd', function(opts)
     if opts.args == "" then
-      print("Usage: :PackAdd <owner/repo> or <full-url>")
+      print("Usage: :PackAdd <plugin-name | owner/repo | full-url>")
       print("Examples:")
-      print("  :PackAdd folke/tokyonight.nvim")
-      print("  :PackAdd https://github.com/neovim/nvim-lspconfig.git")
+      print("  :PackAdd mason                      # Common plugin name")
+      print("  :PackAdd folke/tokyonight.nvim      # GitHub shorthand")
+      print("  :PackAdd https://github.com/neovim/nvim-lspconfig.git  # Full URL")
       return
     end
 
     add_plugin(opts.args)
   end, {
     nargs = 1,
-    desc = "Add a new plugin"
-  })
-
-  vim.api.nvim_create_user_command('PackInstall', function(opts)
-    if opts.args == "" then
-      print("Usage: :PackInstall <plugin-name>")
-      print("Quick install from common plugins list")
-      quick_install_plugin("")
-      return
-    end
-
-    quick_install_plugin(opts.args)
-  end, {
-    nargs = 1,
     complete = function()
       -- Tab completion for common plugin names
-      local common_plugins = {
-        "lspconfig", "mason", "lazydev", "blink", "telescope", "nvim-tree", "nvm-tree", "oil", "fzf-lua", "harpoon",
-        "gitsigns", "fugitive", "lualine", "bufferline", "noice", "mini", "nvim-lint", "nvim-dap",
-        "treesitter", "nvim-treesitter", "tokyonight", "catppuccin", "gruvbox", "plenary", "web-devicons"
-      }
+      local common_plugins = {}
+      for name, _ in pairs(get_common_plugins()) do
+        table.insert(common_plugins, name)
+      end
+      table.sort(common_plugins)
       return common_plugins
     end,
-    desc = "Quick install common plugins"
+    desc = "Add a new plugin (common name, GitHub spec, or URL)"
   })
 
   -- Plugin update commands

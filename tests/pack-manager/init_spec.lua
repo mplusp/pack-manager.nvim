@@ -159,6 +159,48 @@ describe("pack-manager main module", function()
       -- Clean up preload
       package.preload["plugins.mason"] = nil
     end)
+
+    it("should handle common plugin names", function()
+      -- Mock vim.pack functions
+      local pack_added = false
+      vim.pack.add = function(spec)
+        pack_added = true
+      end
+      vim.pack.get = function() return {} end
+
+      -- Mock file operations
+      vim.fn.writefile = function() return 0 end
+      vim.fn.filereadable = function() return 0 end
+      vim.fn.mkdir = function() return 0 end
+
+      -- Mock user input - confirm all steps
+      vim.fn.input = function(prompt)
+        if prompt:match("Install this plugin") then
+          return "y"  -- Confirm installation
+        elseif prompt:match("Create config file") then
+          return "y"  -- Create config
+        elseif prompt:match("Add require statement") then
+          return "y"  -- Add require
+        end
+        return ""
+      end
+
+      -- Call add_plugin with a common plugin name
+      pack_manager.add_plugin("mason")
+
+      -- Verify plugin was added
+      assert.is_true(pack_added)
+    end)
+
+    it("should handle invalid input gracefully", function()
+      -- Mock vim.pack functions
+      vim.pack.add = function(spec) end
+      vim.pack.get = function() return {} end
+
+      -- Call add_plugin with invalid input should not throw an error
+      local success = pcall(pack_manager.add_plugin, "invalid-input")
+      assert.is_true(success)
+    end)
   end)
 
   describe("update_plugin function", function()
