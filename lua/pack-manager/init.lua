@@ -452,8 +452,31 @@ local function add_plugin(plugin_spec)
       print("Invalid plugin specification.")
       print("Use common plugin name (e.g., 'mason', 'telescope') or GitHub spec (e.g., 'owner/repo').")
       print("\nAvailable common plugins:")
+      
+      -- Create a unique list of plugins to avoid showing duplicates
+      local seen_paths = {}
+      local unique_plugins = {}
+      
       for name, path in pairs(common_plugins) do
-        print("- " .. name .. " (" .. path .. ")")
+        if not seen_paths[path] then
+          seen_paths[path] = true
+          -- Prefer shorter names (without .nvim suffix when possible)
+          local display_name = name
+          if name:match("%.nvim$") then
+            local short_name = name:gsub("%.nvim$", "")
+            if common_plugins[short_name] then
+              display_name = short_name
+            end
+          end
+          table.insert(unique_plugins, {name = display_name, path = path})
+        end
+      end
+      
+      -- Sort by name for better readability
+      table.sort(unique_plugins, function(a, b) return a.name < b.name end)
+      
+      for _, plugin in ipairs(unique_plugins) do
+        print("- " .. plugin.name .. " (" .. plugin.path .. ")")
       end
       return
     end
@@ -1155,13 +1178,28 @@ function M.setup()
   end, {
     nargs = 1,
     complete = function()
-      -- Tab completion for common plugin names
-      local common_plugins = {}
-      for name, _ in pairs(get_common_plugins()) do
-        table.insert(common_plugins, name)
+      -- Tab completion for common plugin names (deduplicated)
+      local plugins_map = get_common_plugins()
+      local seen_paths = {}
+      local unique_names = {}
+      
+      for name, path in pairs(plugins_map) do
+        if not seen_paths[path] then
+          seen_paths[path] = true
+          -- Prefer shorter names (without .nvim suffix when possible)
+          local display_name = name
+          if name:match("%.nvim$") then
+            local short_name = name:gsub("%.nvim$", "")
+            if plugins_map[short_name] then
+              display_name = short_name
+            end
+          end
+          table.insert(unique_names, display_name)
+        end
       end
-      table.sort(common_plugins)
-      return common_plugins
+      
+      table.sort(unique_names)
+      return unique_names
     end,
     desc = "Add a new plugin (common name, GitHub spec, or URL)"
   })
