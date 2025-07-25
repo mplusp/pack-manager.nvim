@@ -6,6 +6,10 @@ local M = {}
 
 M.version = "0.1.0"
 
+-- Forward declarations for local functions
+local create_plugin_config
+local add_require_to_init
+
 -- Safe removal - check if plugin is installed first
 local function safe_remove_plugin(plugin_name)
   local installed_plugins = vim.pack.get()
@@ -551,7 +555,7 @@ local function add_plugin(plugin_spec)
 end
 
 -- Create a basic config file for a new plugin
-local function create_plugin_config(plugin_name, plugin_url)
+create_plugin_config = function(plugin_name, plugin_url)
   local normalized_name = utils.normalize_plugin_name(plugin_name)
   local config_file = utils.get_plugin_config_path(plugin_name)
   local plugins_dir = utils.get_plugins_dir()
@@ -590,7 +594,7 @@ local function create_plugin_config(plugin_name, plugin_url)
 end
 
 -- Add require statement to init.lua
-local function add_require_to_init(plugin_name)
+add_require_to_init = function(plugin_name)
   local init_file = utils.get_init_file()
 
   if vim.fn.filereadable(init_file) ~= 1 then
