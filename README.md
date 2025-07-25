@@ -38,6 +38,7 @@ vim.pack.add({
 
 ## Features
 
+- **Immediate plugin loading** - Plugins are available in current session after installation
 - **Plugin updates** with single or bulk update support
 - **Safe plugin removal** with confirmation prompts
 - **Reversible disable/enable** system that preserves configurations
@@ -59,10 +60,13 @@ Adds a new plugin using GitHub shorthand or full URL with intelligent configurat
 :PackAdd https://github.com/neovim/nvim-lspconfig.git
 ```
 
+After installation, plugins are immediately available in the current session - no restart required! For example, after `:PackInstall mason`, you can immediately run `:Mason` to open the Mason interface.
+
 Features:
 - **Smart plugin detection** - Automatically categorizes plugins (colorschemes, LSP, UI, Git, etc.)
 - **Interactive configuration** - Guided setup process with context-aware prompts
 - **Automatic setup() calls** - Generates proper `require().setup()` calls for plugins that need them
+- **Immediate loading** - Plugins are loaded and available in current session after installation
 - **Colorscheme activation** - Option to immediately apply colorscheme plugins
 - **Intelligent templates** - Creates appropriate config files based on plugin type
 - GitHub shorthand (`owner/repo`) and full URL support
@@ -80,6 +84,7 @@ Quick install from a curated list of common plugins with intelligent configurati
 Features:
 - **Same smart installation** as `:PackAdd` with plugin categorization
 - **Context-aware configuration** - Different templates for different plugin types
+- **Immediate availability** - Plugins are loaded and usable right after installation
 - **Interactive setup** - Colorscheme plugins offer immediate activation
 - **Tab completion** for available plugins
 

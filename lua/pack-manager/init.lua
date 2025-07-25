@@ -539,6 +539,16 @@ local function add_plugin(plugin_spec)
     end
 
     create_plugin_config(plugin_name, plugin_url, options)
+    
+    -- Load the plugin immediately in current session
+    local config_path = "plugins." .. utils.normalize_plugin_name(plugin_name)
+    local success, err = pcall(require, config_path)
+    if success then
+      print("✓ Plugin loaded and configured in current session")
+    else
+      print("⚠ Plugin installed but config not loaded: " .. tostring(err))
+      print("  Plugin will be available after restarting Neovim")
+    end
 
     -- Show next steps
     print("\n--- Next Steps ---")

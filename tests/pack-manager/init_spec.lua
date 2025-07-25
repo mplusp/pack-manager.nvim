@@ -113,6 +113,52 @@ describe("pack-manager main module", function()
       end
       assert.is_true(found_colorscheme_prompt)
     end)
+
+    it("should immediately load plugin after installation", function()
+      -- Mock vim.pack functions
+      local pack_added = false
+      vim.pack.add = function(spec)
+        pack_added = true
+      end
+      vim.pack.get = function() return {} end
+
+      -- Mock file operations
+      vim.fn.writefile = function() return 0 end
+      vim.fn.filereadable = function() return 0 end
+      vim.fn.mkdir = function() return 0 end
+
+      -- Track require calls to verify immediate loading
+      local config_loaded = false
+      local original_require = require
+      
+      -- Add the config to the preload table so require can find it
+      package.preload["plugins.mason"] = function()
+        config_loaded = true
+        return { setup = function() end }
+      end
+
+      -- Mock user input - confirm all steps
+      vim.fn.input = function(prompt)
+        if prompt:match("Install this plugin") then
+          return "y"  -- Confirm installation
+        elseif prompt:match("Create config file") then
+          return "y"  -- Create config
+        elseif prompt:match("Add require statement") then
+          return "y"  -- Add require
+        end
+        return ""
+      end
+
+      -- Call add_plugin with a plugin that needs setup
+      pack_manager.add_plugin("mason-org/mason.nvim")
+
+      -- Verify plugin was added and config was loaded
+      assert.is_true(pack_added)
+      assert.is_true(config_loaded)
+
+      -- Clean up preload
+      package.preload["plugins.mason"] = nil
+    end)
   end)
 
   describe("update_plugin function", function()

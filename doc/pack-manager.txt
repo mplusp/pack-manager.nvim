@@ -18,8 +18,8 @@ CONTENTS                                              *pack-manager-contents*
 
 pack-manager.nvim provides enhanced commands for managing plugins installed
 via Neovim 0.12+'s built-in `vim.pack` system. It offers intelligent plugin
-installation with automatic setup generation, plugin updates, safe removal,
-disable/enable functionality, and bulk operations for inactive plugins.
+installation with immediate loading, automatic setup generation, plugin updates,
+safe removal, disable/enable functionality, and bulk operations for inactive plugins.
 
 ==============================================================================
 2. REQUIREMENTS                                    *pack-manager-requirements*
@@ -34,11 +34,13 @@ Installation Commands:~
                                                               *:PackAdd*
     :PackAdd <spec>             Add plugin with intelligent configuration
                                 Supports GitHub shorthand (owner/repo) or full URLs
-                                Features automatic setup() calls and colorscheme activation
+                                Features immediate loading, automatic setup() calls
+                                and colorscheme activation
                                 
                                                               *:PackInstall*
     :PackInstall <name>         Quick install from curated plugin list
-                                Same smart features as :PackAdd with tab completion
+                                Same smart features as :PackAdd including immediate
+                                loading and tab completion
 
 Update Commands:~
                                                               *:PackUpdate*
@@ -121,11 +123,12 @@ plugin's setup configuration.
 
 Plugin Installation:~
 >
-    " Install with smart configuration
+    " Install with smart configuration (immediately available)
     :PackAdd folke/tokyonight.nvim
     
-    " Quick install common plugins
+    " Quick install common plugins (no restart needed)
     :PackInstall telescope
+    :PackInstall mason    " :Mason command available right after installation
     :PackInstall lspconfig
 <
 
