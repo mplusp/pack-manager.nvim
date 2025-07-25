@@ -181,7 +181,7 @@ The plugin automatically detects and configures different plugin types:
 - LSP: lspconfig, mason, completion plugins
   (Automatic require().setup() generation)
 
-- UI: lualine, telescope, nvim-tree, oil
+- UI: lualine, telescope, nvim-tree, oil, mini
   (Setup calls with configuration templates)
 
 - Git: gitsigns, fugitive

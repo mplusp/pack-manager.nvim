@@ -498,12 +498,19 @@ local function add_plugin(plugin_spec)
     return
   end
 
+  -- Parse plugin spec to get correct branch/version
+  local parsed_spec, err = utils.parse_plugin_spec(plugin_spec)
+  if err then
+    print("Error parsing plugin spec: " .. err)
+    return
+  end
+
   -- Add the plugin using vim.pack.add
   vim.pack.add({
     {
       src = plugin_url,
       name = plugin_name,
-      version = "main"
+      version = parsed_spec.version
     }
   })
 
@@ -597,7 +604,7 @@ get_plugin_info = function(plugin_name, plugin_url)
 
     -- UI plugins
     ui = {
-      patterns = {"lualine", "bufferline", "nvim%-tree", "telescope", "oil", "noice"},
+      patterns = {"lualine", "bufferline", "nvim%-tree", "telescope", "oil", "noice", "mini"},
       setup_required = true,
       has_colorscheme_command = false,
       config_template = function(name, url, norm_name)
@@ -831,6 +838,8 @@ local function quick_install_plugin(plugin_name)
     ["plenary.nvim"] = "nvim-lua/plenary.nvim",
     ["web-devicons"] = "nvim-tree/nvim-web-devicons",
     ["nvim-web-devicons"] = "nvim-tree/nvim-web-devicons",
+    ["mini"] = "echasnovski/mini.nvim",
+    ["mini.nvim"] = "echasnovski/mini.nvim",
   }
 
   local github_path = common_plugins[plugin_name:lower()]
@@ -1156,7 +1165,7 @@ function M.setup()
       local common_plugins = {
         "lspconfig", "mason", "telescope", "nvim-tree", "oil", "gitsigns",
         "fugitive", "lualine", "bufferline", "noice", "treesitter",
-        "tokyonight", "catppuccin", "gruvbox", "plenary", "web-devicons"
+        "tokyonight", "catppuccin", "gruvbox", "plenary", "web-devicons", "mini"
       }
       return common_plugins
     end,

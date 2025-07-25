@@ -82,6 +82,24 @@ describe("pack-manager utils", function()
       assert.is_not_nil(result)
       assert.are.equal("repo-with-dashes", result.name)
     end)
+
+    it("should use correct default branch for telescope", function()
+      local result, err = utils.parse_plugin_spec("nvim-telescope/telescope.nvim")
+
+      assert.is_nil(err)
+      assert.is_not_nil(result)
+      assert.are.equal("telescope.nvim", result.name)
+      assert.are.equal("master", result.version)
+    end)
+
+    it("should use main branch for other plugins", function()
+      local result, err = utils.parse_plugin_spec("folke/tokyonight.nvim")
+
+      assert.is_nil(err)
+      assert.is_not_nil(result)
+      assert.are.equal("tokyonight.nvim", result.name)
+      assert.are.equal("main", result.version)
+    end)
   end)
 
   describe("validate_plugin_name", function()

@@ -38,10 +38,24 @@ function M.parse_plugin_spec(plugin_spec)
     return nil, "Could not determine plugin name from: " .. plugin_spec
   end
 
+  -- Some plugins use different default branches
+  local default_branches = {
+    ["telescope.nvim"] = "master",
+    ["nvim-telescope/telescope.nvim"] = "master",
+  }
+
+  local default_branch = "main"
+  for pattern, branch in pairs(default_branches) do
+    if plugin_url:match(pattern) or plugin_name:match(pattern) then
+      default_branch = branch
+      break
+    end
+  end
+
   return {
     url = plugin_url,
     name = plugin_name,
-    version = "main"
+    version = default_branch
   }, nil
 end
 
