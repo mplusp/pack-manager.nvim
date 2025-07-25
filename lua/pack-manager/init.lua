@@ -678,9 +678,28 @@ get_plugin_info = function(plugin_name, plugin_url)
       end
     },
 
-    -- LSP plugins
+    -- LSP data-only plugins (no setup required)
+    lsp_data = {
+      patterns = {"lspconfig"},
+      setup_required = false,
+      has_colorscheme_command = false,
+      config_template = function(name, url, norm_name)
+        return {
+          "vim.pack.add({",
+          '  "' .. url .. '",',
+          "})",
+          "",
+          "-- " .. name .. " provides LSP configurations",
+          "-- No setup required - use with other LSP plugins like mason-lspconfig",
+          "-- Example usage:",
+          "-- require('lspconfig').lua_ls.setup({})",
+        }
+      end
+    },
+
+    -- LSP plugins that need setup
     lsp = {
-      patterns = {"lspconfig", "mason", "lsp", "cmp", "completion", "lazydev", "blink", "fidget"},
+      patterns = {"mason", "cmp", "completion", "lazydev", "blink", "fidget"},
       setup_required = true,
       has_colorscheme_command = false,
       config_template = function(name, url, norm_name)

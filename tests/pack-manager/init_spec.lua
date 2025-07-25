@@ -422,9 +422,9 @@ describe("pack-manager main module", function()
 
     it("should categorize LSP plugins correctly", function()
       local info = pack_manager._test_get_plugin_info("nvim-lspconfig", "https://github.com/neovim/nvim-lspconfig")
-      assert.are.equal("lsp", info.category)
+      assert.are.equal("lsp_data", info.category)  -- lspconfig is data-only, no setup needed
       assert.is_false(info.info.has_colorscheme_command)
-      assert.is_true(info.info.setup_required)
+      assert.is_false(info.info.setup_required)  -- lspconfig doesn't need setup()
     end)
 
     it("should categorize UI plugins correctly", function()
@@ -532,7 +532,7 @@ describe("pack-manager main module", function()
       assert.is_true(colorscheme_line_index > pack_add_line_index)
     end)
 
-    it("should create LSP config with setup call", function()
+    it("should create LSP data config without setup call", function()
       local written_content = nil
       vim.fn.writefile = function(lines, file)
         written_content = lines
@@ -540,6 +540,41 @@ describe("pack-manager main module", function()
       end
 
       pack_manager._test_create_plugin_config("nvim-lspconfig", "https://github.com/neovim/nvim-lspconfig", {
+        add_require = false,
+        set_colorscheme = false
+      })
+
+      assert.is_not_nil(written_content)
+      -- Check that there's NO require().setup() pattern for lspconfig
+      local has_setup = false
+      local pack_add_line_index = nil
+      local has_usage_comment = false
+
+      for i, line in ipairs(written_content) do
+        if line:match("vim%.pack%.add") then
+          pack_add_line_index = i
+        end
+        if line:match("require%(.+%)%.setup%(") then
+          has_setup = true
+        end
+        if line:match("Example usage:") then
+          has_usage_comment = true
+        end
+      end
+
+      assert.is_false(has_setup)  -- lspconfig should NOT have setup()
+      assert.is_not_nil(pack_add_line_index)
+      assert.is_true(has_usage_comment)  -- Should have usage examples instead
+    end)
+
+    it("should create LSP config with setup call for plugins that need it", function()
+      local written_content = nil
+      vim.fn.writefile = function(lines, file)
+        written_content = lines
+        return 0
+      end
+
+      pack_manager._test_create_plugin_config("mason.nvim", "https://github.com/mason-org/mason.nvim", {
         add_require = false,
         set_colorscheme = false
       })
@@ -560,7 +595,7 @@ describe("pack-manager main module", function()
         end
       end
 
-      assert.is_true(has_setup)
+      assert.is_true(has_setup)  -- mason should have setup()
       assert.is_not_nil(pack_add_line_index)
       assert.is_not_nil(setup_line_index)
       -- Ensure setup call comes AFTER vim.pack.add
