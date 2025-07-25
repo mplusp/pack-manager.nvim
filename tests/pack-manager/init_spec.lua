@@ -129,8 +129,6 @@ describe("pack-manager main module", function()
 
       -- Track require calls to verify immediate loading
       local config_loaded = false
-      local original_require = require
-      
       -- Add the config to the preload table so require can find it
       package.preload["plugins.mason"] = function()
         config_loaded = true

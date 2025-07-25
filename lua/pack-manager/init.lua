@@ -427,11 +427,9 @@ end
 -- Add a new plugin
 local function add_plugin(plugin_spec)
   local plugin_url, plugin_name
-  
   -- First check if it's a common plugin name
   local common_plugins = get_common_plugins()
   local github_path = common_plugins[plugin_spec:lower()]
-  
   if github_path then
     -- It's a common plugin, convert to GitHub spec
     plugin_url = "https://github.com/" .. github_path .. ".git"
@@ -452,23 +450,21 @@ local function add_plugin(plugin_spec)
       print("Invalid plugin specification.")
       print("Use common plugin name (e.g., 'mason', 'telescope') or GitHub spec (e.g., 'owner/repo').")
       print("\nAvailable common plugins:")
-      
       -- Create a unique list of plugins to avoid showing duplicates
       local seen_paths = {}
       local unique_plugins = {}
-      
       for name, path in pairs(common_plugins) do
         if not seen_paths[path] then
           seen_paths[path] = true
           -- Choose the best display name for this plugin
           local display_name = name
-          
+
           -- Special cases where longer names are preferred
           local prefer_longer = {
             ["neovim/nvim-lspconfig"] = "nvim-lspconfig",
             ["nvim-tree/nvim-tree.lua"] = "nvim-tree"
           }
-          
+
           if prefer_longer[path] then
             display_name = prefer_longer[path]
           elseif name:match("%.nvim$") then
@@ -478,14 +474,14 @@ local function add_plugin(plugin_spec)
               display_name = short_name
             end
           end
-          
+
           table.insert(unique_plugins, {name = display_name, path = path})
         end
       end
-      
+
       -- Sort by name for better readability
       table.sort(unique_plugins, function(a, b) return a.name < b.name end)
-      
+
       for _, plugin in ipairs(unique_plugins) do
         print("- " .. plugin.name .. " (" .. plugin.path .. ")")
       end
@@ -560,14 +556,14 @@ local function add_plugin(plugin_spec)
     end
 
     create_plugin_config(plugin_name, plugin_url, options)
-    
+
     -- Load the plugin immediately in current session
     local config_path = "plugins." .. utils.normalize_plugin_name(plugin_name)
-    local success, err = pcall(require, config_path)
+    local success, load_err = pcall(require, config_path)
     if success then
       print("✓ Plugin loaded and configured in current session")
     else
-      print("⚠ Plugin installed but config not loaded: " .. tostring(err))
+      print("⚠ Plugin installed but config not loaded: " .. tostring(load_err))
       print("  Plugin will be available after restarting Neovim")
     end
 
@@ -1214,19 +1210,19 @@ function M.setup()
       local plugins_map = get_common_plugins()
       local seen_paths = {}
       local unique_names = {}
-      
+
       for name, path in pairs(plugins_map) do
         if not seen_paths[path] then
           seen_paths[path] = true
           -- Choose the best display name for this plugin
           local display_name = name
-          
+
           -- Special cases where longer names are preferred
           local prefer_longer = {
             ["neovim/nvim-lspconfig"] = "nvim-lspconfig",
             ["nvim-tree/nvim-tree.lua"] = "nvim-tree"
           }
-          
+
           if prefer_longer[path] then
             display_name = prefer_longer[path]
           elseif name:match("%.nvim$") then
@@ -1236,11 +1232,11 @@ function M.setup()
               display_name = short_name
             end
           end
-          
+
           table.insert(unique_names, display_name)
         end
       end
-      
+
       table.sort(unique_names)
       return unique_names
     end,
@@ -1278,7 +1274,6 @@ end
 -- Export functions for programmatic use
 M.safe_remove_plugin = safe_remove_plugin
 M.remove_plugin_interactive = remove_plugin_interactive
-M.remove_plugins_by_pattern = remove_plugins_by_pattern
 M.remove_plugin_and_config = remove_plugin_and_config
 M.disable_plugin = disable_plugin
 M.enable_plugin = enable_plugin
@@ -1287,7 +1282,6 @@ M.remove_inactive_plugins = remove_inactive_plugins
 M.disable_inactive_plugins = disable_inactive_plugins
 M.list_inactive_plugins = list_inactive_plugins
 M.add_plugin = add_plugin
-M.quick_install_plugin = quick_install_plugin
 M.update_plugin = update_plugin
 M.update_all_plugins = update_all_plugins
 
