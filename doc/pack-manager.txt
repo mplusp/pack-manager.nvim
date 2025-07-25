@@ -178,14 +178,17 @@ The plugin automatically detects and configures different plugin types:
 - Colorschemes: tokyonight, catppuccin, gruvbox, nord, etc.
   (Includes colorscheme activation prompts)
 
-- LSP: lspconfig, mason, completion plugins
+- LSP: lspconfig, mason, lazydev, blink, completion plugins
   (Automatic require().setup() generation)
 
-- UI: lualine, telescope, nvim-tree, oil, mini
+- UI: lualine, telescope, nvim-tree, oil, mini, nvim-web-devicons, fzf-lua
   (Setup calls with configuration templates)
 
 - Git: gitsigns, fugitive
   (Git integration setup)
+
+- Development: nvim-lint, nvim-dap, harpoon
+  (Development tools with setup() calls)
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

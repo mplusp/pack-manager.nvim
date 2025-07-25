@@ -585,7 +585,7 @@ get_plugin_info = function(plugin_name, plugin_url)
 
     -- LSP plugins
     lsp = {
-      patterns = {"lspconfig", "mason", "lsp", "cmp", "completion"},
+      patterns = {"lspconfig", "mason", "lsp", "cmp", "completion", "lazydev", "blink"},
       setup_required = true,
       has_colorscheme_command = false,
       config_template = function(name, url, norm_name)
@@ -604,7 +604,7 @@ get_plugin_info = function(plugin_name, plugin_url)
 
     -- UI plugins
     ui = {
-      patterns = {"lualine", "bufferline", "nvim%-tree", "telescope", "oil", "noice", "mini"},
+      patterns = {"lualine", "bufferline", "nvim%-tree", "telescope", "oil", "noice", "mini", "fzf%-lua", "harpoon"},
       setup_required = true,
       has_colorscheme_command = false,
       config_template = function(name, url, norm_name)
@@ -633,6 +633,25 @@ get_plugin_info = function(plugin_name, plugin_url)
           "})",
           "",
           "-- " .. name .. " Git integration",
+          'require("' .. norm_name .. '").setup({',
+          "  -- Add your configuration here",
+          "})",
+        }
+      end
+    },
+
+    -- Development tools
+    dev = {
+      patterns = {"nvim%-lint", "nvim%-dap", "lint", "dap"},
+      setup_required = true,
+      has_colorscheme_command = false,
+      config_template = function(name, url, norm_name)
+        return {
+          "vim.pack.add({",
+          '  "' .. url .. '",',
+          "})",
+          "",
+          "-- " .. name .. " development tools configuration",
           'require("' .. norm_name .. '").setup({',
           "  -- Add your configuration here",
           "})",
@@ -800,13 +819,20 @@ local function quick_install_plugin(plugin_name)
     ["nvim-lspconfig"] = "neovim/nvim-lspconfig",
     ["mason"] = "mason-org/mason.nvim",
     ["mason.nvim"] = "mason-org/mason.nvim",
+    ["lazydev"] = "folke/lazydev.nvim",
+    ["lazydev.nvim"] = "folke/lazydev.nvim",
+    ["blink"] = "saghen/blink.cmp",
+    ["blink.cmp"] = "saghen/blink.cmp",
 
     -- File management
     ["telescope"] = "nvim-telescope/telescope.nvim",
     ["telescope.nvim"] = "nvim-telescope/telescope.nvim",
     ["nvim-tree"] = "nvim-tree/nvim-tree.lua",
+    ["nvm-tree"] = "nvim-tree/nvim-tree.lua",
     ["oil"] = "stevearc/oil.nvim",
     ["oil.nvim"] = "stevearc/oil.nvim",
+    ["fzf-lua"] = "ibhagwan/fzf-lua",
+    ["harpoon"] = "ThePrimeagen/harpoon",
 
     -- Git
     ["gitsigns"] = "lewis6991/gitsigns.nvim",
@@ -821,6 +847,10 @@ local function quick_install_plugin(plugin_name)
     ["bufferline.nvim"] = "akinsho/bufferline.nvim",
     ["noice"] = "folke/noice.nvim",
     ["noice.nvim"] = "folke/noice.nvim",
+
+    -- Development tools
+    ["nvim-lint"] = "mfussenegger/nvim-lint",
+    ["nvim-dap"] = "mfussenegger/nvim-dap",
 
     -- Syntax and treesitter
     ["treesitter"] = "nvim-treesitter/nvim-treesitter",
@@ -1163,9 +1193,9 @@ function M.setup()
     complete = function()
       -- Tab completion for common plugin names
       local common_plugins = {
-        "lspconfig", "mason", "telescope", "nvim-tree", "oil", "gitsigns",
-        "fugitive", "lualine", "bufferline", "noice", "treesitter",
-        "tokyonight", "catppuccin", "gruvbox", "plenary", "web-devicons", "mini"
+        "lspconfig", "mason", "lazydev", "blink", "telescope", "nvim-tree", "nvm-tree", "oil", "fzf-lua", "harpoon",
+        "gitsigns", "fugitive", "lualine", "bufferline", "noice", "mini", "nvim-lint", "nvim-dap",
+        "treesitter", "nvim-treesitter", "tokyonight", "catppuccin", "gruvbox", "plenary", "web-devicons"
       }
       return common_plugins
     end,

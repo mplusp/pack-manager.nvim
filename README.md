@@ -84,12 +84,13 @@ Features:
 - **Tab completion** for available plugins
 
 Includes popular plugins like:
-- **LSP**: lspconfig, mason (auto-generates setup() calls)
-- **File Management**: telescope, nvim-tree, oil (with setup() calls)
+- **LSP**: lspconfig, mason, lazydev, blink (auto-generates setup() calls)
+- **File Management**: telescope, nvim-tree, oil, fzf-lua (with setup() calls)
 - **Git**: gitsigns, fugitive (with setup() calls)
-- **UI**: lualine, bufferline, noice, mini (with setup() calls)
-- **Themes**: tokyonight, catppuccin, gruvbox (with colorscheme activation option)
-- **Utilities**: treesitter, plenary, web-devicons
+- **UI**: lualine, bufferline, noice, mini, nvim-web-devicons (with setup() calls)
+- **Themes**: tokyonight, catppuccin, gruvbox, nord (with colorscheme activation option)
+- **Utilities**: treesitter, plenary, harpoon (with setup() calls)
+- **Development**: nvim-lint, nvim-dap (with setup() calls)
 
 ### Plugin Updates
 
