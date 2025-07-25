@@ -38,6 +38,7 @@ vim.pack.add({
 
 ## Features
 
+- **Plugin updates** with single or bulk update support
 - **Safe plugin removal** with confirmation prompts
 - **Reversible disable/enable** system that preserves configurations
 - **Bulk operations** for inactive plugins
@@ -89,6 +90,36 @@ Includes popular plugins like:
 - **UI**: lualine, bufferline, noice (with setup() calls)
 - **Themes**: tokyonight, catppuccin, gruvbox (with colorscheme activation option)
 - **Utilities**: treesitter, plenary, web-devicons
+
+### Plugin Updates
+
+#### `:PackUpdate [plugin_name]`
+Updates a specific plugin or all plugins if no name is provided.
+
+```
+:PackUpdate                    # Update all plugins
+:PackUpdate tokyonight.nvim    # Update specific plugin
+```
+
+Features:
+- **Tab completion** for installed plugin names
+- **Confirmation prompts** before updating
+- **Single or bulk updates** - update one plugin or all at once
+- **Safety checks** - verifies plugin exists before updating
+- **Clear feedback** - shows what's being updated
+
+#### `:PackUpdateAll`
+Updates all installed plugins at once.
+
+```
+:PackUpdateAll
+```
+
+Features:
+- **Bulk update** - updates all plugins in one command
+- **Plugin listing** - shows all plugins before updating
+- **Confirmation prompt** - requires user confirmation
+- **Progress feedback** - clear status messages
 
 ### Basic Plugin Management
 
@@ -235,6 +266,17 @@ The plugin exports functions for programmatic use:
 
 ```lua
 local pack_manager = require('pack-manager')
+
+-- Update a specific plugin
+pack_manager.update_plugin('tokyonight.nvim')
+
+-- Update all plugins
+pack_manager.update_plugin('')  -- Empty string updates all
+-- OR
+pack_manager.update_all_plugins()
+
+-- Add a new plugin
+pack_manager.add_plugin('folke/tokyonight.nvim')
 
 -- Remove a plugin safely
 pack_manager.safe_remove_plugin('some-plugin.nvim')

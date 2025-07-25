@@ -115,6 +115,187 @@ describe("pack-manager main module", function()
     end)
   end)
 
+  describe("update_plugin function", function()
+    it("should be callable", function()
+      assert.is_function(pack_manager.update_plugin)
+    end)
+
+    it("should update a specific plugin", function()
+      -- Mock vim.pack functions
+      local updated_plugins = {}
+      vim.pack.update = function(plugins)
+        if plugins then
+          for _, plugin in ipairs(plugins) do
+            table.insert(updated_plugins, plugin)
+          end
+        end
+      end
+      vim.pack.get = function()
+        return {
+          {
+            active = true,
+            spec = { name = "test-plugin.nvim", src = "https://github.com/user/test-plugin.nvim" }
+          }
+        }
+      end
+
+      -- Mock user input to confirm update
+      vim.fn.input = function(prompt)
+        if prompt:match("Update plugin") then
+          return "y"
+        end
+        return ""
+      end
+
+      -- Call update_plugin with specific plugin
+      pack_manager.update_plugin("test-plugin.nvim")
+
+      -- Verify the plugin was updated
+      assert.are.equal(1, #updated_plugins)
+      assert.are.equal("test-plugin.nvim", updated_plugins[1])
+    end)
+
+    it("should update all plugins when no plugin name provided", function()
+      -- Mock vim.pack functions
+      local update_all_called = false
+      vim.pack.update = function(plugins)
+        if not plugins then
+          update_all_called = true
+        end
+      end
+      vim.pack.get = function()
+        return {
+          { active = true, spec = { name = "plugin1" } },
+          { active = true, spec = { name = "plugin2" } }
+        }
+      end
+
+      -- Mock user input to confirm update all
+      vim.fn.input = function(prompt)
+        if prompt:match("Update all plugins") then
+          return "y"
+        end
+        return ""
+      end
+
+      -- Call update_plugin with empty string
+      pack_manager.update_plugin("")
+
+      -- Verify all plugins were updated
+      assert.is_true(update_all_called)
+    end)
+
+    it("should handle plugin not found", function()
+      vim.pack.get = function()
+        return {
+          { active = true, spec = { name = "existing-plugin" } }
+        }
+      end
+
+      -- Should not throw error for non-existent plugin
+      assert.has_no.errors(function()
+        pack_manager.update_plugin("non-existent-plugin")
+      end)
+    end)
+
+    it("should handle cancelled update", function()
+      -- Mock vim.pack functions
+      local update_called = false
+      vim.pack.update = function()
+        update_called = true
+      end
+      vim.pack.get = function()
+        return {
+          { active = true, spec = { name = "test-plugin" } }
+        }
+      end
+
+      -- Mock user input to cancel update
+      vim.fn.input = function(prompt)
+        if prompt:match("Update plugin") then
+          return "n"
+        end
+        return ""
+      end
+
+      pack_manager.update_plugin("test-plugin")
+
+      -- Verify update was not called
+      assert.is_false(update_called)
+    end)
+  end)
+
+  describe("update_all_plugins function", function()
+    it("should be callable", function()
+      assert.is_function(pack_manager.update_all_plugins)
+    end)
+
+    it("should update all plugins", function()
+      -- Mock vim.pack functions
+      local update_all_called = false
+      vim.pack.update = function()
+        update_all_called = true
+      end
+      vim.pack.get = function()
+        return {
+          { active = true, spec = { name = "plugin1" } },
+          { active = true, spec = { name = "plugin2" } },
+          { active = true, spec = { name = "plugin3" } }
+        }
+      end
+
+      -- Mock user input to confirm update
+      vim.fn.input = function(prompt)
+        if prompt:match("Update all") then
+          return "y"
+        end
+        return ""
+      end
+
+      pack_manager.update_all_plugins()
+
+      -- Verify all plugins were updated
+      assert.is_true(update_all_called)
+    end)
+
+    it("should handle no plugins installed", function()
+      vim.pack.get = function()
+        return {}
+      end
+
+      -- Should not throw error
+      assert.has_no.errors(function()
+        pack_manager.update_all_plugins()
+      end)
+    end)
+
+    it("should handle cancelled update", function()
+      -- Mock vim.pack functions
+      local update_called = false
+      vim.pack.update = function()
+        update_called = true
+      end
+      vim.pack.get = function()
+        return {
+          { active = true, spec = { name = "plugin1" } }
+        }
+      end
+
+      -- Mock user input to cancel
+      vim.fn.input = function(prompt)
+        if prompt:match("Update all") then
+          return "n"
+        end
+        return ""
+      end
+
+      pack_manager.update_all_plugins()
+
+      -- Verify update was not called
+      assert.is_false(update_called)
+    end)
+  end)
+
   describe("disable_plugin function", function()
     it("should be callable", function()
       assert.is_function(pack_manager.disable_plugin)

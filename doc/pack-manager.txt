@@ -11,12 +11,14 @@ CONTENTS                                              *pack-manager-contents*
     2. Requirements ................................. |pack-manager-requirements|
     3. Commands ..................................... |pack-manager-commands|
     4. Configuration ................................ |pack-manager-config|
+    5. Examples ..................................... |pack-manager-examples|
 
 ==============================================================================
 1. INTRODUCTION                                          *pack-manager-intro*
 
 pack-manager.nvim provides enhanced commands for managing plugins installed
-via Neovim 0.12+'s built-in `vim.pack` system. It offers safe removal,
+via Neovim 0.12+'s built-in `vim.pack` system. It offers intelligent plugin
+installation with automatic setup generation, plugin updates, safe removal,
 disable/enable functionality, and bulk operations for inactive plugins.
 
 ==============================================================================
@@ -29,30 +31,67 @@ disable/enable functionality, and bulk operations for inactive plugins.
 3. COMMANDS                                           *pack-manager-commands*
 
 Installation Commands:~
-    :PackAdd <spec>             Add plugin (owner/repo or URL)
-    :PackInstall <name>         Quick install common plugins
+                                                              *:PackAdd*
+    :PackAdd <spec>             Add plugin with intelligent configuration
+                                Supports GitHub shorthand (owner/repo) or full URLs
+                                Features automatic setup() calls and colorscheme activation
+                                
+                                                              *:PackInstall*
+    :PackInstall <name>         Quick install from curated plugin list
+                                Same smart features as :PackAdd with tab completion
+
+Update Commands:~
+                                                              *:PackUpdate*
+    :PackUpdate [name]          Update specific plugin or all plugins
+                                With no arguments, updates all installed plugins
+                                Tab completion available for plugin names
+                                
+                                                              *:PackUpdateAll*
+    :PackUpdateAll              Update all installed plugins at once
+                                Bulk update with confirmation prompt
 
 Basic Commands:~
-    :PackList                   List all plugins with status
+                                                              *:PackList*
+    :PackList                   List all plugins with active/inactive status
+    
+                                                              *:PackCount*
     :PackCount                  Show total plugin count
-    :PackInfo [name]            Show plugin information
+    
+                                                              *:PackInfo*
+    :PackInfo [name]            Show detailed plugin information
 
 Removal Commands:~
-    :PackDel <name>             Remove plugin temporarily
-    :PackDelComplete <name>     Remove with cleanup instructions  
-    :PackDelFull <name>         Permanently remove plugin and config
-    :PackRemove                 Interactive removal menu
-    :PackDelPattern <pattern>   Remove plugins matching pattern
+                                                              *:PackDelTemp*
+    :PackDelTemp <name>         Remove plugin temporarily (reinstalls on restart)
+    
+                                                              *:PackDelFull*
+    :PackDelFull <name>         Permanently remove plugin and config files
+    
+                                                              *:PackRemove*
+    :PackRemove                 Interactive removal with numbered menu
+    
+                                                              *:PackDelPattern*
+    :PackDelPattern <pattern>   Remove plugins matching Lua pattern
 
 Disable/Enable Commands:~
-    :PackDisable <name>         Disable plugin (reversible)
-    :PackEnable <name>          Re-enable disabled plugin
-    :PackListDisabled           List disabled plugins
+                                                              *:PackDisable*
+    :PackDisable <name>         Disable plugin (reversible, preserves config)
+    
+                                                              *:PackEnable*
+    :PackEnable <name>          Re-enable previously disabled plugin
+    
+                                                              *:PackListDisabled*
+    :PackListDisabled           List all disabled plugins
 
 Inactive Plugin Commands:~
-    :PackListInactive           List inactive plugins
-    :PackDelInactive            Remove all inactive plugins
-    :PackDisableInactive        Disable all inactive plugins
+                                                              *:PackListInactive*
+    :PackListInactive           List plugins marked as inactive
+    
+                                                              *:PackDelInactive*
+    :PackDelInactive            Remove all inactive plugins from disk
+    
+                                                              *:PackDisableInactive*
+    :PackDisableInactive        Disable all inactive plugins permanently
 
 ==============================================================================
 4. CONFIGURATION                                       *pack-manager-config*
@@ -77,11 +116,76 @@ The plugin assumes this directory structure:
 Each plugin config file should contain a `vim.pack.add()` call and the
 plugin's setup configuration.
 
-For programmatic access:
+==============================================================================
+5. EXAMPLES                                           *pack-manager-examples*
+
+Plugin Installation:~
 >
-    local pack_manager = require('pack-manager')
-    pack_manager.disable_plugin('plugin-name')
+    " Install with smart configuration
+    :PackAdd folke/tokyonight.nvim
+    
+    " Quick install common plugins
+    :PackInstall telescope
+    :PackInstall lspconfig
 <
+
+Plugin Updates:~
+>
+    " Update specific plugin
+    :PackUpdate tokyonight.nvim
+    
+    " Update all plugins
+    :PackUpdate
+    :PackUpdateAll
+<
+
+Plugin Management:~
+>
+    " List and get info
+    :PackList
+    :PackInfo telescope.nvim
+    
+    " Temporary removal
+    :PackDelTemp some-plugin
+    
+    " Permanent removal
+    :PackDelFull some-plugin
+    
+    " Disable/enable (recommended)
+    :PackDisable some-plugin
+    :PackEnable some-plugin
+<
+
+Programmatic Usage:~
+>
+    lua << EOF
+    local pack_manager = require('pack-manager')
+    
+    -- Install and update
+    pack_manager.add_plugin('folke/tokyonight.nvim')
+    pack_manager.update_plugin('telescope.nvim')
+    pack_manager.update_all_plugins()
+    
+    -- Manage plugins
+    pack_manager.disable_plugin('some-plugin')
+    pack_manager.list_inactive_plugins()
+    EOF
+<
+
+Plugin Categories:~
+The plugin automatically detects and configures different plugin types:
+
+- Colorschemes: tokyonight, catppuccin, gruvbox, nord, etc.
+  (Includes colorscheme activation prompts)
+
+- LSP: lspconfig, mason, completion plugins
+  (Automatic require().setup() generation)
+
+- UI: lualine, telescope, nvim-tree, oil
+  (Setup calls with configuration templates)
+
+- Git: gitsigns, fugitive
+  (Git integration setup)
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

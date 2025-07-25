@@ -848,6 +848,90 @@ local function quick_install_plugin(plugin_name)
   end
 end
 
+-- Update a specific plugin or all plugins
+local function update_plugin(plugin_name)
+  if plugin_name == "" then
+    -- Update all plugins
+    print("Updating all plugins...")
+    local plugins = vim.pack.get()
+
+    if vim.tbl_isempty(plugins) then
+      print("No plugins installed to update")
+      return
+    end
+
+    print("Found " .. #plugins .. " plugins to update:")
+    for i, plugin in ipairs(plugins) do
+      local name = plugin.spec and plugin.spec.name or "Unknown Plugin " .. i
+      print("- " .. name)
+    end
+
+    local confirm = vim.fn.input("Update all plugins? (y/N): ")
+    if confirm:lower() ~= 'y' then
+      print("Cancelled")
+      return
+    end
+
+    vim.pack.update()
+    print("All plugins updated successfully!")
+  else
+    -- Update specific plugin
+    local plugins = vim.pack.get()
+    local found = false
+
+    for _, plugin in ipairs(plugins) do
+      local name = plugin.spec and plugin.spec.name or ""
+      local src = plugin.spec and plugin.spec.src or ""
+      if name == plugin_name or src:match(plugin_name) then
+        found = true
+        break
+      end
+    end
+
+    if not found then
+      print("Plugin not found: " .. plugin_name)
+      print("Use :PackList to see installed plugins")
+      return
+    end
+
+    local confirm = vim.fn.input("Update plugin '" .. plugin_name .. "'? (y/N): ")
+    if confirm:lower() ~= 'y' then
+      print("Cancelled")
+      return
+    end
+
+    vim.pack.update({ plugin_name })
+    print("Updated plugin: " .. plugin_name)
+  end
+end
+
+-- Update all plugins without individual confirmation
+local function update_all_plugins()
+  print("Updating all plugins...")
+  local plugins = vim.pack.get()
+
+  if vim.tbl_isempty(plugins) then
+    print("No plugins installed to update")
+    return
+  end
+
+  print("Found " .. #plugins .. " plugins:")
+  for i, plugin in ipairs(plugins) do
+    local name = plugin.spec and plugin.spec.name or "Unknown Plugin " .. i
+    print("- " .. name)
+  end
+
+  local confirm = vim.fn.input("Update all " .. #plugins .. " plugins? (y/N): ")
+  if confirm:lower() ~= 'y' then
+    print("Cancelled")
+    return
+  end
+
+  print("Updating plugins...")
+  vim.pack.update()
+  print("All plugins updated successfully!")
+end
+
 -- Setup function to create all commands
 function M.setup()
   -- Handle cleanup when plugins are added, updated, or removed
@@ -1078,6 +1162,33 @@ function M.setup()
     end,
     desc = "Quick install common plugins"
   })
+
+  -- Plugin update commands
+  vim.api.nvim_create_user_command('PackUpdate', function(opts)
+    if opts.args == "" then
+      update_plugin("")
+    else
+      update_plugin(opts.args)
+    end
+  end, {
+    nargs = '?',
+    complete = function()
+      local plugins = vim.pack.get()
+      local names = {}
+      for i, plugin in ipairs(plugins) do
+        local name = plugin.spec and plugin.spec.name or "Unknown Plugin " .. i
+        table.insert(names, name)
+      end
+      return names
+    end,
+    desc = "Update a specific plugin or all plugins"
+  })
+
+  vim.api.nvim_create_user_command('PackUpdateAll', function()
+    update_all_plugins()
+  end, {
+    desc = "Update all installed plugins"
+  })
 end
 
 -- Export functions for programmatic use
@@ -1093,6 +1204,8 @@ M.disable_inactive_plugins = disable_inactive_plugins
 M.list_inactive_plugins = list_inactive_plugins
 M.add_plugin = add_plugin
 M.quick_install_plugin = quick_install_plugin
+M.update_plugin = update_plugin
+M.update_all_plugins = update_all_plugins
 
 -- Export test-only functions (only exposed for testing)
 if _G._TEST then
