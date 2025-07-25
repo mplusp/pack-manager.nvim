@@ -2,6 +2,7 @@
 -- Enhanced commands for Neovim's built-in vim.pack plugin manager
 
 local utils = require('pack-manager.utils')
+local ui = require('pack-manager.ui')
 local M = {}
 
 M.version = "0.4.1"
@@ -31,8 +32,8 @@ local function safe_remove_plugin(plugin_name)
     return
   end
 
-  local confirm = vim.fn.input("Remove plugin '" .. plugin_name .. "'? (y/N): ")
-  if confirm:lower() ~= 'y' then
+  local confirm = ui.confirm("Remove plugin '" .. plugin_name .. "'?", false)
+  if not confirm then
     print("Cancelled")
     return
   end
@@ -57,32 +58,21 @@ local function remove_plugin_interactive()
     return
   end
 
-  -- Show available plugins
-  print("Installed plugins:")
-  for i, name in ipairs(plugin_names) do
-    print(i .. ". " .. name)
+  -- Show selection dialog
+  local plugin_index = ui.select("Select plugin to remove:", plugin_names)
+
+  if not plugin_index then
+    return  -- User cancelled
   end
 
-  -- Get user input
-  local choice = vim.fn.input("Enter plugin number to remove (or 'q' to quit): ")
-
-  if choice == 'q' then
+  local plugin_to_remove = plugin_names[plugin_index]
+  local confirm = ui.confirm("Remove plugin '" .. plugin_to_remove .. "'?", false)
+  if not confirm then
     return
   end
 
-  local plugin_index = tonumber(choice)
-  if plugin_index and plugin_index > 0 and plugin_index <= #plugin_names then
-    local plugin_to_remove = plugin_names[plugin_index]
-    local confirm = vim.fn.input("Remove plugin '" .. plugin_to_remove .. "'? (y/N): ")
-    if confirm:lower() ~= 'y' then
-      print("\nCancelled")
-      return
-    end
-    vim.pack.del({ plugin_to_remove })
-    print("\nRemoved: " .. plugin_to_remove)
-  else
-    print("Invalid selection")
-  end
+  vim.pack.del({ plugin_to_remove })
+  ui.info("Removed: " .. plugin_to_remove, "Success")
 end
 
 
@@ -114,8 +104,8 @@ local function remove_plugin_and_config(plugin_name)
   print("- Config file: " .. config_file)
   print("- Require line from init.lua")
 
-  local confirm = vim.fn.input("Are you sure? (y/N): ")
-  if confirm:lower() ~= 'y' then
+  local confirm = ui.confirm("Are you sure?", false)
+  if not confirm then
     print("Cancelled")
     return
   end
@@ -189,8 +179,8 @@ local function disable_plugin(plugin_name)
   print("- Move config: " .. config_file .. " -> " .. disabled_file)
   print("- Remove require line from init.lua")
 
-  local confirm = vim.fn.input("Disable plugin? (y/N): ")
-  if confirm:lower() ~= 'y' then
+  local confirm = ui.confirm("Disable plugin?", false)
+  if not confirm then
     print("Cancelled")
     return
   end
@@ -262,8 +252,8 @@ local function enable_plugin(plugin_name)
   print("- Move config: " .. disabled_file .. " -> " .. config_file)
   print("- You'll need to manually add require line to init.lua")
 
-  local confirm = vim.fn.input("Enable plugin? (y/N): ")
-  if confirm:lower() ~= 'y' then
+  local confirm = ui.confirm("Enable plugin?", false)
+  if not confirm then
     print("Cancelled")
     return
   end
@@ -319,8 +309,8 @@ local function remove_inactive_plugins()
     print("- " .. name)
   end
 
-  local confirm = vim.fn.input("Remove all inactive plugins from disk? (y/N): ")
-  if confirm:lower() ~= 'y' then
+  local confirm = ui.confirm("Remove all inactive plugins from disk?", false)
+  if not confirm then
     print("Cancelled")
     return
   end
@@ -353,8 +343,8 @@ local function disable_inactive_plugins()
     print("- " .. name)
   end
 
-  local confirm = vim.fn.input("Disable all inactive plugins? (move configs to disabled folder) (y/N): ")
-  if confirm:lower() ~= 'y' then
+  local confirm = ui.confirm("Disable all inactive plugins?\n(move configs to disabled folder)", false)
+  if not confirm then
     print("Cancelled")
     return
   end
@@ -508,8 +498,8 @@ local function add_plugin(plugin_spec)
   print("- Name: " .. plugin_name)
   print("- URL: " .. plugin_url)
 
-  local confirm = vim.fn.input("Install this plugin? (y/N): ")
-  if confirm:lower() ~= 'y' then
+  local confirm = ui.confirm("Install this plugin?", false)
+  if not confirm then
     print("Cancelled")
     return
   end
@@ -541,18 +531,16 @@ local function add_plugin(plugin_spec)
   print("\n--- Plugin Configuration ---")
   print("Plugin type: " .. plugin_data.category)
 
-  local create_config = vim.fn.input("Create config file? (Y/n): ")
-  if create_config:lower() ~= 'n' then
+  local create_config = ui.confirm("Create config file?", true)
+  if create_config then
     local options = {}
 
     -- Ask about adding require statement
-    local add_require = vim.fn.input("Add require statement to init.lua? (Y/n): ")
-    options.add_require = add_require:lower() ~= 'n'
+    options.add_require = ui.confirm("Add require statement to init.lua?", true)
 
     -- Special handling for colorschemes
     if plugin_data.info.has_colorscheme_command then
-      local set_colorscheme = vim.fn.input("Apply this colorscheme now? (y/N): ")
-      options.set_colorscheme = set_colorscheme:lower() == 'y'
+      options.set_colorscheme = ui.confirm("Apply this colorscheme now?", false)
     end
 
     create_plugin_config(plugin_name, plugin_url, options)
@@ -858,8 +846,8 @@ create_plugin_config = function(plugin_name, plugin_url, options)
     print("The colorscheme will be applied on next Neovim restart.")
 
     -- Offer to load it now
-    local load_now = vim.fn.input("Load and apply the colorscheme now? (y/N): ")
-    if load_now:lower() == 'y' then
+    local load_now = ui.confirm("Load and apply the colorscheme now?", false)
+    if load_now then
       -- Source the config file to load the plugin and apply colorscheme
       local ok, err = pcall(vim.cmd, 'source ' .. config_file)
       if ok then
@@ -941,8 +929,8 @@ local function update_plugin(plugin_name)
       print("- " .. name)
     end
 
-    local confirm = vim.fn.input("Update all plugins? (y/N): ")
-    if confirm:lower() ~= 'y' then
+    local confirm = ui.confirm("Update all plugins?", false)
+    if not confirm then
       print("Cancelled")
       return
     end
@@ -969,8 +957,8 @@ local function update_plugin(plugin_name)
       return
     end
 
-    local confirm = vim.fn.input("Update plugin '" .. plugin_name .. "'? (y/N): ")
-    if confirm:lower() ~= 'y' then
+    local confirm = ui.confirm("Update plugin '" .. plugin_name .. "'?", false)
+    if not confirm then
       print("Cancelled")
       return
     end
@@ -996,8 +984,8 @@ local function update_all_plugins()
     print("- " .. name)
   end
 
-  local confirm = vim.fn.input("Update all " .. #plugins .. " plugins? (y/N): ")
-  if confirm:lower() ~= 'y' then
+  local confirm = ui.confirm("Update all " .. #plugins .. " plugins?", false)
+  if not confirm then
     print("Cancelled")
     return
   end
@@ -1046,8 +1034,8 @@ function M.setup()
       return
     end
 
-    local confirm = vim.fn.input("Remove plugin '" .. opts.args .. "' from disk temporarily? (will reinstall on restart) (y/N): ")
-    if confirm:lower() ~= 'y' then
+    local confirm = ui.confirm("Remove plugin '" .. opts.args .. "' from disk temporarily?\n(will reinstall on restart)", false)
+    if not confirm then
       print("Cancelled")
       return
     end
