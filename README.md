@@ -55,6 +55,40 @@ use {
 
 ## Commands
 
+### Plugin Installation
+
+#### `:PackAdd <owner/repo>` or `:PackAdd <full-url>`
+Adds a new plugin using GitHub shorthand or full URL.
+
+```
+:PackAdd folke/tokyonight.nvim
+:PackAdd https://github.com/neovim/nvim-lspconfig.git
+```
+
+Features:
+- Supports GitHub shorthand (`owner/repo`) and full URLs
+- Checks for duplicate installations
+- Confirmation prompt with plugin details
+- Optional config file creation
+- Automatic require statement insertion
+
+#### `:PackInstall <plugin-name>`
+Quick install from a curated list of common plugins with tab completion.
+
+```
+:PackInstall telescope
+:PackInstall lspconfig
+:PackInstall tokyonight
+```
+
+Includes popular plugins like:
+- **LSP**: lspconfig, mason
+- **File Management**: telescope, nvim-tree, oil
+- **Git**: gitsigns, fugitive
+- **UI**: lualine, bufferline, noice
+- **Themes**: tokyonight, catppuccin, gruvbox
+- **Utilities**: treesitter, plenary, web-devicons
+
 ### Basic Plugin Management
 
 #### `:PackList`

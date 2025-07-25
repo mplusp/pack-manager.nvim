@@ -28,6 +28,10 @@ disable/enable functionality, and bulk operations for inactive plugins.
 ==============================================================================
 3. COMMANDS                                           *pack-manager-commands*
 
+Installation Commands:~
+    :PackAdd <spec>             Add plugin (owner/repo or URL)
+    :PackInstall <name>         Quick install common plugins
+
 Basic Commands:~
     :PackList                   List all plugins with status
     :PackCount                  Show total plugin count

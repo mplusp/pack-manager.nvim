@@ -491,6 +491,217 @@ local function list_inactive_plugins()
   end
 end
 
+-- Add a new plugin
+local function add_plugin(plugin_spec)
+  -- Parse the plugin specification
+  local plugin_url, plugin_name, plugin_version
+  
+  -- Handle different input formats
+  if plugin_spec:match("^https?://") then
+    -- Full URL provided
+    plugin_url = plugin_spec
+    plugin_name = plugin_url:match("/([^/]+)%.git$") or plugin_url:match("/([^/]+)$")
+    plugin_name = plugin_name:gsub("%.git$", "")
+  elseif plugin_spec:match("^[%w_%-]+/[%w_%-%.]+") then
+    -- GitHub shorthand (owner/repo)
+    plugin_url = "https://github.com/" .. plugin_spec .. ".git"
+    plugin_name = plugin_spec:match("/([^/]+)$")
+  else
+    print("Invalid plugin specification. Use 'owner/repo' or full URL.")
+    return
+  end
+
+  if not plugin_name then
+    print("Could not determine plugin name from: " .. plugin_spec)
+    return
+  end
+
+  -- Check if plugin is already installed
+  local plugins = vim.pack.get()
+  for _, plugin in ipairs(plugins) do
+    local existing_name = plugin.spec and plugin.spec.name or ""
+    if existing_name == plugin_name then
+      print("Plugin already installed: " .. plugin_name)
+      return
+    end
+  end
+
+  print("Adding plugin:")
+  print("- Name: " .. plugin_name)
+  print("- URL: " .. plugin_url)
+  
+  local confirm = vim.fn.input("Install this plugin? (y/N): ")
+  if confirm:lower() ~= 'y' then
+    print("Cancelled")
+    return
+  end
+
+  -- Add the plugin using vim.pack.add
+  vim.pack.add({
+    {
+      src = plugin_url,
+      name = plugin_name,
+      version = plugin_version or "main"
+    }
+  })
+  
+  print("Plugin added: " .. plugin_name)
+  print("The plugin will be installed and loaded.")
+  
+  -- Optionally create a config file
+  local create_config = vim.fn.input("Create config file? (y/N): ")
+  if create_config:lower() == 'y' then
+    create_plugin_config(plugin_name, plugin_url)
+  end
+end
+
+-- Create a basic config file for a new plugin
+local function create_plugin_config(plugin_name, plugin_url)
+  local normalized_name = normalize_plugin_name(plugin_name)
+  local config_file = vim.fn.stdpath('config') .. "/lua/config/plugins/" .. normalized_name .. ".lua"
+  local plugins_dir = vim.fn.stdpath('config') .. "/lua/config/plugins"
+  
+  -- Create plugins directory if it doesn't exist
+  vim.fn.mkdir(plugins_dir, "p")
+  
+  -- Check if config file already exists
+  if vim.fn.filereadable(config_file) == 1 then
+    print("Config file already exists: " .. config_file)
+    return
+  end
+  
+  -- Create basic config file content
+  local config_content = {
+    "vim.pack.add({",
+    '  "' .. plugin_url .. '",',
+    "})",
+    "",
+    '-- Configure ' .. plugin_name .. ' here',
+    '-- require("' .. normalized_name .. '").setup({})',
+  }
+  
+  -- Write config file
+  vim.fn.writefile(config_content, config_file)
+  print("Created config file: " .. config_file)
+  
+  -- Ask if user wants to add require statement to init.lua
+  local add_require = vim.fn.input("Add require statement to init.lua? (y/N): ")
+  if add_require:lower() == 'y' then
+    add_require_to_init(normalized_name)
+  else
+    print("Remember to add this line to your init.lua:")
+    print("require('config.plugins." .. normalized_name .. "')")
+  end
+end
+
+-- Add require statement to init.lua
+local function add_require_to_init(plugin_name)
+  local init_file = vim.fn.stdpath('config') .. "/init.lua"
+  
+  if vim.fn.filereadable(init_file) ~= 1 then
+    print("init.lua not found at: " .. init_file)
+    return
+  end
+  
+  local lines = vim.fn.readfile(init_file)
+  local require_line = "require('config.plugins." .. plugin_name .. "')"
+  
+  -- Check if require statement already exists
+  for _, line in ipairs(lines) do
+    if line:match("require%('config%.plugins%." .. plugin_name:gsub("%-", "%%-") .. "'%)") then
+      print("Require statement already exists in init.lua")
+      return
+    end
+  end
+  
+  -- Add require statement at the end of plugin requires
+  local inserted = false
+  local new_lines = {}
+  
+  for i, line in ipairs(lines) do
+    table.insert(new_lines, line)
+    
+    -- Insert after other plugin requires
+    if not inserted and line:match("require%('config%.plugins%.") then
+      -- Look ahead to see if next line is also a plugin require
+      local next_line = lines[i + 1]
+      if not next_line or not next_line:match("require%('config%.plugins%.") then
+        table.insert(new_lines, require_line)
+        inserted = true
+      end
+    end
+  end
+  
+  -- If no plugin requires found, add at the end
+  if not inserted then
+    table.insert(new_lines, require_line)
+  end
+  
+  vim.fn.writefile(new_lines, init_file)
+  print("Added require statement to init.lua")
+end
+
+-- Quick install from common plugin sources
+local function quick_install_plugin(plugin_name)
+  local common_plugins = {
+    -- LSP and completion
+    ["lspconfig"] = "neovim/nvim-lspconfig",
+    ["nvim-lspconfig"] = "neovim/nvim-lspconfig",
+    ["mason"] = "mason-org/mason.nvim",
+    ["mason.nvim"] = "mason-org/mason.nvim",
+    
+    -- File management
+    ["telescope"] = "nvim-telescope/telescope.nvim",
+    ["telescope.nvim"] = "nvim-telescope/telescope.nvim",
+    ["nvim-tree"] = "nvim-tree/nvim-tree.lua",
+    ["oil"] = "stevearc/oil.nvim",
+    ["oil.nvim"] = "stevearc/oil.nvim",
+    
+    -- Git
+    ["gitsigns"] = "lewis6991/gitsigns.nvim",
+    ["gitsigns.nvim"] = "lewis6991/gitsigns.nvim",
+    ["fugitive"] = "tpope/vim-fugitive",
+    ["vim-fugitive"] = "tpope/vim-fugitive",
+    
+    -- UI enhancements
+    ["lualine"] = "nvim-lualine/lualine.nvim",
+    ["lualine.nvim"] = "nvim-lualine/lualine.nvim",
+    ["bufferline"] = "akinsho/bufferline.nvim",
+    ["bufferline.nvim"] = "akinsho/bufferline.nvim",
+    ["noice"] = "folke/noice.nvim",
+    ["noice.nvim"] = "folke/noice.nvim",
+    
+    -- Syntax and treesitter
+    ["treesitter"] = "nvim-treesitter/nvim-treesitter",
+    ["nvim-treesitter"] = "nvim-treesitter/nvim-treesitter",
+    
+    -- Themes
+    ["tokyonight"] = "folke/tokyonight.nvim",
+    ["tokyonight.nvim"] = "folke/tokyonight.nvim",
+    ["catppuccin"] = "catppuccin/nvim",
+    ["gruvbox"] = "ellisonleao/gruvbox.nvim",
+    ["gruvbox.nvim"] = "ellisonleao/gruvbox.nvim",
+    
+    -- Utilities
+    ["plenary"] = "nvim-lua/plenary.nvim",
+    ["plenary.nvim"] = "nvim-lua/plenary.nvim",
+    ["web-devicons"] = "nvim-tree/nvim-web-devicons",
+    ["nvim-web-devicons"] = "nvim-tree/nvim-web-devicons",
+  }
+  
+  local github_path = common_plugins[plugin_name:lower()]
+  if github_path then
+    print("Found common plugin: " .. plugin_name .. " -> " .. github_path)
+    add_plugin(github_path)
+  else
+    print("Plugin '" .. plugin_name .. "' not found in common plugins list.")
+    print("Available quick install plugins:")
+    for name, path in pairs(common_plugins) do
+      print("- " .. name .. " (" .. path .. ")")
+    end
+  end
+end
+
 -- Setup function to create all commands
 function M.setup()
   -- Handle cleanup when plugins are added, updated, or removed
@@ -702,6 +913,45 @@ function M.setup()
   vim.api.nvim_create_user_command('PackListInactive', list_inactive_plugins, {})
   vim.api.nvim_create_user_command('PackDelInactive', remove_inactive_plugins, {})
   vim.api.nvim_create_user_command('PackDisableInactive', disable_inactive_plugins, {})
+
+  -- Plugin installation commands
+  vim.api.nvim_create_user_command('PackAdd', function(opts)
+    if opts.args == "" then
+      print("Usage: :PackAdd <owner/repo> or <full-url>")
+      print("Examples:")
+      print("  :PackAdd folke/tokyonight.nvim")
+      print("  :PackAdd https://github.com/neovim/nvim-lspconfig.git")
+      return
+    end
+
+    add_plugin(opts.args)
+  end, { 
+    nargs = 1,
+    desc = "Add a new plugin"
+  })
+
+  vim.api.nvim_create_user_command('PackInstall', function(opts)
+    if opts.args == "" then
+      print("Usage: :PackInstall <plugin-name>")
+      print("Quick install from common plugins list")
+      quick_install_plugin("")
+      return
+    end
+
+    quick_install_plugin(opts.args)
+  end, { 
+    nargs = 1,
+    complete = function()
+      -- Tab completion for common plugin names
+      local common_plugins = {
+        "lspconfig", "mason", "telescope", "nvim-tree", "oil", "gitsigns", 
+        "fugitive", "lualine", "bufferline", "noice", "treesitter", 
+        "tokyonight", "catppuccin", "gruvbox", "plenary", "web-devicons"
+      }
+      return common_plugins
+    end,
+    desc = "Quick install common plugins"
+  })
 end
 
 -- Export functions for programmatic use
@@ -716,5 +966,7 @@ M.list_disabled_plugins = list_disabled_plugins
 M.remove_inactive_plugins = remove_inactive_plugins
 M.disable_inactive_plugins = disable_inactive_plugins
 M.list_inactive_plugins = list_inactive_plugins
+M.add_plugin = add_plugin
+M.quick_install_plugin = quick_install_plugin
 
 return M
