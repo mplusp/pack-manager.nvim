@@ -75,7 +75,7 @@ use {
 ### Plugin Installation
 
 #### `:PackAdd <owner/repo>` or `:PackAdd <full-url>`
-Adds a new plugin using GitHub shorthand or full URL.
+Adds a new plugin using GitHub shorthand or full URL with intelligent configuration.
 
 ```
 :PackAdd folke/tokyonight.nvim
@@ -83,14 +83,16 @@ Adds a new plugin using GitHub shorthand or full URL.
 ```
 
 Features:
-- Supports GitHub shorthand (`owner/repo`) and full URLs
-- Checks for duplicate installations
-- Confirmation prompt with plugin details
-- Optional config file creation
-- Automatic require statement insertion
+- **Smart plugin detection** - Automatically categorizes plugins (colorschemes, LSP, UI, Git, etc.)
+- **Interactive configuration** - Guided setup process with context-aware prompts
+- **Automatic setup() calls** - Generates proper `require().setup()` calls for plugins that need them
+- **Colorscheme activation** - Option to immediately apply colorscheme plugins
+- **Intelligent templates** - Creates appropriate config files based on plugin type
+- GitHub shorthand (`owner/repo`) and full URL support
+- Duplicate installation checking
 
 #### `:PackInstall <plugin-name>`
-Quick install from a curated list of common plugins with tab completion.
+Quick install from a curated list of common plugins with intelligent configuration.
 
 ```
 :PackInstall telescope
@@ -98,12 +100,18 @@ Quick install from a curated list of common plugins with tab completion.
 :PackInstall tokyonight
 ```
 
+Features:
+- **Same smart installation** as `:PackAdd` with plugin categorization
+- **Context-aware configuration** - Different templates for different plugin types
+- **Interactive setup** - Colorscheme plugins offer immediate activation
+- **Tab completion** for available plugins
+
 Includes popular plugins like:
-- **LSP**: lspconfig, mason
-- **File Management**: telescope, nvim-tree, oil
-- **Git**: gitsigns, fugitive
-- **UI**: lualine, bufferline, noice
-- **Themes**: tokyonight, catppuccin, gruvbox
+- **LSP**: lspconfig, mason (auto-generates setup() calls)
+- **File Management**: telescope, nvim-tree, oil (with setup() calls)
+- **Git**: gitsigns, fugitive (with setup() calls)
+- **UI**: lualine, bufferline, noice (with setup() calls)
+- **Themes**: tokyonight, catppuccin, gruvbox (with colorscheme activation option)
 - **Utilities**: treesitter, plenary, web-devicons
 
 ### Basic Plugin Management

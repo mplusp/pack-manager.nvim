@@ -9,6 +9,7 @@ M.version = "0.1.0"
 -- Forward declarations for local functions
 local create_plugin_config
 local add_require_to_init
+local get_plugin_info
 
 -- Safe removal - check if plugin is installed first
 local function safe_remove_plugin(plugin_name)
@@ -547,15 +548,173 @@ local function add_plugin(plugin_spec)
   print("Plugin added: " .. plugin_name)
   print("The plugin will be installed and loaded.")
 
-  -- Optionally create a config file
-  local create_config = vim.fn.input("Create config file? (y/N): ")
-  if create_config:lower() == 'y' then
-    create_plugin_config(plugin_name, plugin_url)
+  -- Get plugin information for smart defaults
+  local plugin_data = get_plugin_info(plugin_name, plugin_url)
+
+  -- Interactive configuration setup
+  print("\n--- Plugin Configuration ---")
+  print("Plugin type: " .. plugin_data.category)
+
+  local create_config = vim.fn.input("Create config file? (Y/n): ")
+  if create_config:lower() ~= 'n' then
+    local options = {}
+
+    -- Ask about adding require statement
+    local add_require = vim.fn.input("Add require statement to init.lua? (Y/n): ")
+    options.add_require = add_require:lower() ~= 'n'
+
+    -- Special handling for colorschemes
+    if plugin_data.info.has_colorscheme_command then
+      local set_colorscheme = vim.fn.input("Apply this colorscheme now? (y/N): ")
+      options.set_colorscheme = set_colorscheme:lower() == 'y'
+    end
+
+    create_plugin_config(plugin_name, plugin_url, options)
+
+    -- Show next steps
+    print("\n--- Next Steps ---")
+    if options.add_require then
+      print("✓ Plugin config created and added to init.lua")
+    else
+      print("✓ Plugin config created")
+      print("  Remember to add: require('plugins." .. utils.normalize_plugin_name(plugin_name) .. "')")
+    end
+
+    if plugin_data.info.has_colorscheme_command and not options.set_colorscheme then
+      print("  To use this colorscheme later: :colorscheme " .. utils.normalize_plugin_name(plugin_name))
+    end
+
+    if plugin_data.info.setup_required then
+      print("  Edit the config file to customize plugin settings")
+    end
   end
 end
 
--- Create a basic config file for a new plugin
-create_plugin_config = function(plugin_name, plugin_url)
+-- Plugin categorization for enhanced installation
+get_plugin_info = function(plugin_name, plugin_url)
+  local normalized_name = utils.normalize_plugin_name(plugin_name)
+
+  -- Define plugin categories and their characteristics
+  local plugin_categories = {
+    -- Colorschemes
+    colorschemes = {
+      patterns = {"tokyonight", "catppuccin", "gruvbox", "nord", "onedark", "nightfox", "rose%-pine"},
+      setup_required = false,
+      has_colorscheme_command = true,
+      config_template = function(name, url, norm_name)
+        return {
+          "vim.pack.add({",
+          '  "' .. url .. '",',
+          "})",
+          "",
+          "-- " .. name .. " colorscheme configuration",
+          "-- Uncomment the line below to set as default colorscheme",
+          "-- vim.cmd.colorscheme('" .. norm_name .. "')",
+        }
+      end
+    },
+
+    -- LSP plugins
+    lsp = {
+      patterns = {"lspconfig", "mason", "lsp", "cmp", "completion"},
+      setup_required = true,
+      has_colorscheme_command = false,
+      config_template = function(name, url, norm_name)
+        return {
+          "vim.pack.add({",
+          '  "' .. url .. '",',
+          "})",
+          "",
+          "-- " .. name .. " LSP configuration",
+          'require("' .. norm_name .. '").setup({',
+          "  -- Add your configuration here",
+          "})",
+        }
+      end
+    },
+
+    -- UI plugins
+    ui = {
+      patterns = {"lualine", "bufferline", "nvim%-tree", "telescope", "oil", "noice"},
+      setup_required = true,
+      has_colorscheme_command = false,
+      config_template = function(name, url, norm_name)
+        return {
+          "vim.pack.add({",
+          '  "' .. url .. '",',
+          "})",
+          "",
+          "-- " .. name .. " configuration",
+          'require("' .. norm_name .. '").setup({',
+          "  -- Add your configuration here",
+          "})",
+        }
+      end
+    },
+
+    -- Git plugins
+    git = {
+      patterns = {"gitsigns", "fugitive", "git"},
+      setup_required = true,
+      has_colorscheme_command = false,
+      config_template = function(name, url, norm_name)
+        return {
+          "vim.pack.add({",
+          '  "' .. url .. '",',
+          "})",
+          "",
+          "-- " .. name .. " Git integration",
+          'require("' .. norm_name .. '").setup({',
+          "  -- Add your configuration here",
+          "})",
+        }
+      end
+    },
+
+    -- Default category
+    default = {
+      patterns = {},
+      setup_required = true,
+      has_colorscheme_command = false,
+      config_template = function(name, url, norm_name)
+        return {
+          "vim.pack.add({",
+          '  "' .. url .. '",',
+          "})",
+          "",
+          "-- " .. name .. " configuration",
+          'require("' .. norm_name .. '").setup({',
+          "  -- Add your configuration here",
+          "})",
+        }
+      end
+    }
+  }
+
+  -- Determine plugin category
+  local category = "default"
+  for cat_name, cat_info in pairs(plugin_categories) do
+    if cat_name ~= "default" then
+      for _, pattern in ipairs(cat_info.patterns) do
+        if normalized_name:lower():match(pattern) then
+          category = cat_name
+          break
+        end
+      end
+      if category ~= "default" then break end
+    end
+  end
+
+  return {
+    category = category,
+    info = plugin_categories[category],
+    normalized_name = normalized_name
+  }
+end
+
+-- Create a comprehensive config file for a new plugin
+create_plugin_config = function(plugin_name, plugin_url, options)
+  options = options or {}
   local normalized_name = utils.normalize_plugin_name(plugin_name)
   local config_file = utils.get_plugin_config_path(plugin_name)
   local plugins_dir = utils.get_plugins_dir()
@@ -569,28 +728,26 @@ create_plugin_config = function(plugin_name, plugin_url)
     return
   end
 
-  -- Create basic config file content
-  local config_content = {
-    "vim.pack.add({",
-    '  "' .. plugin_url .. '",',
-    "})",
-    "",
-    '-- Configure ' .. plugin_name .. ' here',
-    '-- require("' .. normalized_name .. '").setup({})',
-  }
+  -- Get plugin information and category
+  local plugin_data = get_plugin_info(plugin_name, plugin_url)
+  local config_content = plugin_data.info.config_template(plugin_name, plugin_url, normalized_name)
 
   -- Write config file
   vim.fn.writefile(config_content, config_file)
   print("Created config file: " .. config_file)
 
-  -- Ask if user wants to add require statement to init.lua
-  local add_require = vim.fn.input("Add require statement to init.lua? (y/N): ")
-  if add_require:lower() == 'y' then
+  -- Add require statement to init.lua if requested
+  if options.add_require then
     add_require_to_init(normalized_name)
-  else
-    print("Remember to add this line to your init.lua:")
-    print("require('plugins." .. normalized_name .. "')")
   end
+
+  -- Set colorscheme if it's a colorscheme plugin and user opted in
+  if plugin_data.info.has_colorscheme_command and options.set_colorscheme then
+    vim.cmd.colorscheme(normalized_name)
+    print("Applied colorscheme: " .. normalized_name)
+  end
+
+  return plugin_data
 end
 
 -- Add require statement to init.lua
@@ -691,6 +848,8 @@ local function quick_install_plugin(plugin_name)
   local github_path = common_plugins[plugin_name:lower()]
   if github_path then
     print("Found common plugin: " .. plugin_name .. " -> " .. github_path)
+
+    -- Use enhanced add_plugin which now has interactive dialogs
     add_plugin(github_path)
   else
     print("Plugin '" .. plugin_name .. "' not found in common plugins list.")
