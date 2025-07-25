@@ -460,14 +460,25 @@ local function add_plugin(plugin_spec)
       for name, path in pairs(common_plugins) do
         if not seen_paths[path] then
           seen_paths[path] = true
-          -- Prefer shorter names (without .nvim suffix when possible)
+          -- Choose the best display name for this plugin
           local display_name = name
-          if name:match("%.nvim$") then
+          
+          -- Special cases where longer names are preferred
+          local prefer_longer = {
+            ["neovim/nvim-lspconfig"] = "nvim-lspconfig",
+            ["nvim-tree/nvim-tree.lua"] = "nvim-tree"
+          }
+          
+          if prefer_longer[path] then
+            display_name = prefer_longer[path]
+          elseif name:match("%.nvim$") then
+            -- For most plugins, prefer shorter names without .nvim suffix
             local short_name = name:gsub("%.nvim$", "")
             if common_plugins[short_name] then
               display_name = short_name
             end
           end
+          
           table.insert(unique_plugins, {name = display_name, path = path})
         end
       end
@@ -1188,14 +1199,25 @@ function M.setup()
       for name, path in pairs(plugins_map) do
         if not seen_paths[path] then
           seen_paths[path] = true
-          -- Prefer shorter names (without .nvim suffix when possible)
+          -- Choose the best display name for this plugin
           local display_name = name
-          if name:match("%.nvim$") then
+          
+          -- Special cases where longer names are preferred
+          local prefer_longer = {
+            ["neovim/nvim-lspconfig"] = "nvim-lspconfig",
+            ["nvim-tree/nvim-tree.lua"] = "nvim-tree"
+          }
+          
+          if prefer_longer[path] then
+            display_name = prefer_longer[path]
+          elseif name:match("%.nvim$") then
+            -- For most plugins, prefer shorter names without .nvim suffix
             local short_name = name:gsub("%.nvim$", "")
             if plugins_map[short_name] then
               display_name = short_name
             end
           end
+          
           table.insert(unique_names, display_name)
         end
       end
