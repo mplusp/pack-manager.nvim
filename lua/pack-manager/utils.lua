@@ -19,7 +19,7 @@ end
 -- Parse plugin specification into components
 function M.parse_plugin_spec(plugin_spec)
   local plugin_url, plugin_name
-  
+
   -- Handle different input formats
   if plugin_spec:match("^https?://") then
     -- Full URL provided
@@ -103,11 +103,11 @@ function M.validate_plugin_name(name)
   if not name or name == "" then
     return false, "Plugin name cannot be empty"
   end
-  
+
   if name:match("^%s*$") then
     return false, "Plugin name cannot be only whitespace"
   end
-  
+
   return true, nil
 end
 

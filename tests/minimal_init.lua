@@ -17,7 +17,7 @@ if not vim.pack then
       -- Mock implementation
     end,
     del = function(names)
-      -- Mock implementation  
+      -- Mock implementation
     end,
     update = function()
       -- Mock implementation
@@ -77,7 +77,7 @@ end
 vim.api = vim.api or {}
 vim.api.nvim_create_user_command = vim.api.nvim_create_user_command or function(name, command, opts) end
 vim.api.nvim_create_autocmd = vim.api.nvim_create_autocmd or function(events, opts) end
-vim.api.nvim_create_augroup = vim.api.nvim_create_augroup or function(name, opts) 
+vim.api.nvim_create_augroup = vim.api.nvim_create_augroup or function(name, opts)
   return 1
 end
 

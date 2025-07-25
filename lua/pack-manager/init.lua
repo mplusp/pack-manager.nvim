@@ -490,7 +490,7 @@ end
 local function add_plugin(plugin_spec)
   -- Parse the plugin specification
   local plugin_url, plugin_name
-  
+
   -- Handle different input formats
   if plugin_spec:match("^https?://") then
     -- Full URL provided
@@ -524,7 +524,7 @@ local function add_plugin(plugin_spec)
   print("Adding plugin:")
   print("- Name: " .. plugin_name)
   print("- URL: " .. plugin_url)
-  
+
   local confirm = vim.fn.input("Install this plugin? (y/N): ")
   if confirm:lower() ~= 'y' then
     print("Cancelled")
@@ -539,10 +539,10 @@ local function add_plugin(plugin_spec)
       version = "main"
     }
   })
-  
+
   print("Plugin added: " .. plugin_name)
   print("The plugin will be installed and loaded.")
-  
+
   -- Optionally create a config file
   local create_config = vim.fn.input("Create config file? (y/N): ")
   if create_config:lower() == 'y' then
@@ -551,20 +551,20 @@ local function add_plugin(plugin_spec)
 end
 
 -- Create a basic config file for a new plugin
-function create_plugin_config(plugin_name, plugin_url)
+local function create_plugin_config(plugin_name, plugin_url)
   local normalized_name = utils.normalize_plugin_name(plugin_name)
   local config_file = utils.get_plugin_config_path(plugin_name)
   local plugins_dir = utils.get_plugins_dir()
-  
+
   -- Create plugins directory if it doesn't exist
   vim.fn.mkdir(plugins_dir, "p")
-  
+
   -- Check if config file already exists
   if vim.fn.filereadable(config_file) == 1 then
     print("Config file already exists: " .. config_file)
     return
   end
-  
+
   -- Create basic config file content
   local config_content = {
     "vim.pack.add({",
@@ -574,11 +574,11 @@ function create_plugin_config(plugin_name, plugin_url)
     '-- Configure ' .. plugin_name .. ' here',
     '-- require("' .. normalized_name .. '").setup({})',
   }
-  
+
   -- Write config file
   vim.fn.writefile(config_content, config_file)
   print("Created config file: " .. config_file)
-  
+
   -- Ask if user wants to add require statement to init.lua
   local add_require = vim.fn.input("Add require statement to init.lua? (y/N): ")
   if add_require:lower() == 'y' then
@@ -590,17 +590,17 @@ function create_plugin_config(plugin_name, plugin_url)
 end
 
 -- Add require statement to init.lua
-function add_require_to_init(plugin_name)
+local function add_require_to_init(plugin_name)
   local init_file = utils.get_init_file()
-  
+
   if vim.fn.filereadable(init_file) ~= 1 then
     print("init.lua not found at: " .. init_file)
     return
   end
-  
+
   local lines = vim.fn.readfile(init_file)
   local require_line = "require('plugins." .. plugin_name .. "')"
-  
+
   -- Check if require statement already exists
   for _, line in ipairs(lines) do
     if line:match("require%('plugins%." .. plugin_name:gsub("%-", "%%-") .. "'%)") then
@@ -608,14 +608,14 @@ function add_require_to_init(plugin_name)
       return
     end
   end
-  
+
   -- Add require statement at the end of plugin requires
   local inserted = false
   local new_lines = {}
-  
+
   for i, line in ipairs(lines) do
     table.insert(new_lines, line)
-    
+
     -- Insert after other plugin requires
     if not inserted and line:match("require%('plugins%.") then
       -- Look ahead to see if next line is also a plugin require
@@ -626,12 +626,12 @@ function add_require_to_init(plugin_name)
       end
     end
   end
-  
+
   -- If no plugin requires found, add at the end
   if not inserted then
     table.insert(new_lines, require_line)
   end
-  
+
   vim.fn.writefile(new_lines, init_file)
   print("Added require statement to init.lua")
 end
@@ -644,20 +644,20 @@ local function quick_install_plugin(plugin_name)
     ["nvim-lspconfig"] = "neovim/nvim-lspconfig",
     ["mason"] = "mason-org/mason.nvim",
     ["mason.nvim"] = "mason-org/mason.nvim",
-    
+
     -- File management
     ["telescope"] = "nvim-telescope/telescope.nvim",
     ["telescope.nvim"] = "nvim-telescope/telescope.nvim",
     ["nvim-tree"] = "nvim-tree/nvim-tree.lua",
     ["oil"] = "stevearc/oil.nvim",
     ["oil.nvim"] = "stevearc/oil.nvim",
-    
+
     -- Git
     ["gitsigns"] = "lewis6991/gitsigns.nvim",
     ["gitsigns.nvim"] = "lewis6991/gitsigns.nvim",
     ["fugitive"] = "tpope/vim-fugitive",
     ["vim-fugitive"] = "tpope/vim-fugitive",
-    
+
     -- UI enhancements
     ["lualine"] = "nvim-lualine/lualine.nvim",
     ["lualine.nvim"] = "nvim-lualine/lualine.nvim",
@@ -665,25 +665,25 @@ local function quick_install_plugin(plugin_name)
     ["bufferline.nvim"] = "akinsho/bufferline.nvim",
     ["noice"] = "folke/noice.nvim",
     ["noice.nvim"] = "folke/noice.nvim",
-    
+
     -- Syntax and treesitter
     ["treesitter"] = "nvim-treesitter/nvim-treesitter",
     ["nvim-treesitter"] = "nvim-treesitter/nvim-treesitter",
-    
+
     -- Themes
     ["tokyonight"] = "folke/tokyonight.nvim",
     ["tokyonight.nvim"] = "folke/tokyonight.nvim",
     ["catppuccin"] = "catppuccin/nvim",
     ["gruvbox"] = "ellisonleao/gruvbox.nvim",
     ["gruvbox.nvim"] = "ellisonleao/gruvbox.nvim",
-    
+
     -- Utilities
     ["plenary"] = "nvim-lua/plenary.nvim",
     ["plenary.nvim"] = "nvim-lua/plenary.nvim",
     ["web-devicons"] = "nvim-tree/nvim-web-devicons",
     ["nvim-web-devicons"] = "nvim-tree/nvim-web-devicons",
   }
-  
+
   local github_path = common_plugins[plugin_name:lower()]
   if github_path then
     print("Found common plugin: " .. plugin_name .. " -> " .. github_path)
@@ -920,7 +920,7 @@ function M.setup()
     end
 
     add_plugin(opts.args)
-  end, { 
+  end, {
     nargs = 1,
     desc = "Add a new plugin"
   })
@@ -934,13 +934,13 @@ function M.setup()
     end
 
     quick_install_plugin(opts.args)
-  end, { 
+  end, {
     nargs = 1,
     complete = function()
       -- Tab completion for common plugin names
       local common_plugins = {
-        "lspconfig", "mason", "telescope", "nvim-tree", "oil", "gitsigns", 
-        "fugitive", "lualine", "bufferline", "noice", "treesitter", 
+        "lspconfig", "mason", "telescope", "nvim-tree", "oil", "gitsigns",
+        "fugitive", "lualine", "bufferline", "noice", "treesitter",
         "tokyonight", "catppuccin", "gruvbox", "plenary", "web-devicons"
       }
       return common_plugins
