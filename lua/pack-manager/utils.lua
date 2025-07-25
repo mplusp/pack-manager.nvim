@@ -42,11 +42,14 @@ function M.parse_plugin_spec(plugin_spec)
   local default_branches = {
     ["telescope.nvim"] = "master",
     ["nvim-telescope/telescope.nvim"] = "master",
+    ["nvim-lspconfig"] = "master",
+    ["neovim/nvim-lspconfig"] = "master",
   }
 
   local default_branch = "main"
   for pattern, branch in pairs(default_branches) do
-    if plugin_url:match(pattern) or plugin_name:match(pattern) then
+    -- Check if pattern matches plugin name directly or appears in the URL
+    if plugin_name == pattern or plugin_url:find(pattern, 1, true) then
       default_branch = branch
       break
     end

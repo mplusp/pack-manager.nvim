@@ -92,6 +92,15 @@ describe("pack-manager utils", function()
       assert.are.equal("master", result.version)
     end)
 
+    it("should use correct default branch for nvim-lspconfig", function()
+      local result, err = utils.parse_plugin_spec("neovim/nvim-lspconfig")
+
+      assert.is_nil(err)
+      assert.is_not_nil(result)
+      assert.are.equal("nvim-lspconfig", result.name)
+      assert.are.equal("master", result.version)  -- nvim-lspconfig uses master, not main
+    end)
+
     it("should use main branch for other plugins", function()
       local result, err = utils.parse_plugin_spec("folke/tokyonight.nvim")
 

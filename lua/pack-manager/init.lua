@@ -591,6 +591,8 @@ get_common_plugins = function()
     ["lazydev.nvim"] = "folke/lazydev.nvim",
     ["blink"] = "saghen/blink.cmp",
     ["blink.cmp"] = "saghen/blink.cmp",
+    ["fidget"] = "j-hui/fidget.nvim",
+    ["fidget.nvim"] = "j-hui/fidget.nvim",
 
     -- File management
     ["telescope"] = "nvim-telescope/telescope.nvim",
@@ -667,7 +669,7 @@ get_plugin_info = function(plugin_name, plugin_url)
 
     -- LSP plugins
     lsp = {
-      patterns = {"lspconfig", "mason", "lsp", "cmp", "completion", "lazydev", "blink"},
+      patterns = {"lspconfig", "mason", "lsp", "cmp", "completion", "lazydev", "blink", "fidget"},
       setup_required = true,
       has_colorscheme_command = false,
       config_template = function(name, url, norm_name)
