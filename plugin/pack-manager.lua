@@ -1,4 +1,4 @@
--- pack-manager.nvim
+-- pack-manager.nvim v0.1.0
 -- Enhanced commands for Neovim's built-in vim.pack plugin manager
 -- 
 -- This plugin only loads if vim.pack is available (Neovim 0.12+)

@@ -1,8 +1,10 @@
--- pack-manager.nvim
+-- pack-manager.nvim v0.1.0
 -- Enhanced commands for Neovim's built-in vim.pack plugin manager
 
 local utils = require('pack-manager.utils')
 local M = {}
+
+M.version = "0.1.0"
 
 -- Safe removal - check if plugin is installed first
 local function safe_remove_plugin(plugin_name)

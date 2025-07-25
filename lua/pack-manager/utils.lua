@@ -1,4 +1,4 @@
--- Utility functions for pack-manager.nvim
+-- Utility functions for pack-manager.nvim v0.1.0
 -- Separated for easier testing
 
 local M = {}

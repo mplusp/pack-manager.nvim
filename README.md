@@ -1,8 +1,25 @@
 # pack-manager.nvim
 
+[![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)](https://github.com/mplusp/pack-manager.nvim/releases/tag/v0.1.0)
+
 Enhanced commands for Neovim's built-in `vim.pack` plugin manager.
 
 This plugin provides a comprehensive set of user commands to manage plugins installed via Neovim 0.12+'s built-in `vim.pack` system, including safe removal, disabling/enabling, and bulk operations on inactive plugins.
+
+## About This Project
+
+This project, **pack-manager.nvim**, was created entirely as a collaborative effort between Marco Peluso (human developer) and Claude (Anthropic's AI assistant). Marco provided direction, requirements, and feedback, while Claude implemented all the code, documentation, and testing infrastructure based on those instructions.
+
+This serves as a fun test project to explore Claude's capabilities in:
+- Understanding complex Neovim plugin architecture
+- Writing comprehensive Lua code with proper error handling
+- Creating robust testing infrastructure
+- Generating thorough documentation
+- Following software engineering best practices
+
+While we believe the plugin is functional and well-structured, **it has not been extensively tested in production environments**. 
+
+**⚠️ USE AT YOUR OWN RISK**: This plugin directly manipulates your Neovim configuration files and plugin directories. We provide no warranties and cannot take responsibility for any damage, data loss, or issues that may occur from using this plugin. Always backup your configuration before use.
 
 ## Requirements
 
@@ -17,7 +34,7 @@ Add to your plugin configuration:
 
 ```lua
 vim.pack.add({
-  "path/to/pack-manager.nvim"
+  "mplusp/pack-manager.nvim"
 })
 ```
 
@@ -26,7 +43,7 @@ vim.pack.add({
 **lazy.nvim:**
 ```lua
 {
-  "path/to/pack-manager.nvim",
+  "mplusp/pack-manager.nvim",
   cond = function()
     return vim.fn.has('nvim-0.12') == 1 and vim.pack ~= nil
   end,
@@ -36,7 +53,7 @@ vim.pack.add({
 **packer.nvim:**
 ```lua
 use {
-  "path/to/pack-manager.nvim",
+  "mplusp/pack-manager.nvim",
   cond = function()
     return vim.fn.has('nvim-0.12') == 1 and vim.pack ~= nil
   end,
@@ -347,4 +364,24 @@ pack-manager.nvim/
 
 ## License
 
-MIT License - feel free to use and modify as needed.
+MIT License
+
+Copyright (c) 2025 pack-manager.nvim contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
