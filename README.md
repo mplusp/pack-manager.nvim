@@ -1,6 +1,6 @@
 # pack-manager.nvim
 
-[![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)](https://github.com/mplusp/pack-manager.nvim/releases/tag/v0.1.0)
+[![Version](https://img.shields.io/badge/version-v0.2.0-blue.svg)](https://github.com/mplusp/pack-manager.nvim/releases/tag/v0.2.0)
 
 Enhanced commands for Neovim's built-in `vim.pack` plugin manager.
 
