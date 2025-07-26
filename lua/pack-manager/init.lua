@@ -995,6 +995,139 @@ local function update_all_plugins()
   print("All plugins updated successfully!")
 end
 
+-- Show main menu and handle action selection
+local function show_main_menu()
+  local action = ui.menu()
+  
+  if not action then
+    return -- User cancelled
+  end
+  
+  -- Handle the selected action
+  if action == "add" then
+    local plugin_spec = ui.input("Enter plugin name/URL")
+    if plugin_spec and plugin_spec ~= "" then
+      M.add_plugin(plugin_spec)
+    end
+  elseif action == "list" then
+    local plugins = vim.pack.get()
+    if #plugins == 0 then
+      ui.info("No plugins installed.", "Plugin List")
+    else
+      local plugin_list = {"Installed plugins:"}
+      for _, plugin in ipairs(plugins) do
+        local name = plugin.spec and plugin.spec.name or "Unknown"
+        local status = plugin.active and "(active)" or "(inactive)"
+        table.insert(plugin_list, "- " .. name .. " " .. status)
+      end
+      ui.info(table.concat(plugin_list, "\n"), "Plugin List")
+    end
+  elseif action == "update" then
+    local plugins = vim.pack.get()
+    if #plugins == 0 then
+      ui.info("No plugins to update.", "Update")
+    else
+      local plugin_names = {}
+      for _, plugin in ipairs(plugins) do
+        local name = plugin.spec and plugin.spec.name or "Unknown"
+        table.insert(plugin_names, name)
+      end
+      table.insert(plugin_names, 1, "Update All Plugins")
+      
+      local selection = ui.select("Choose plugin to update:", plugin_names, 1)
+      if selection == 1 then
+        M.update_all_plugins()
+      elseif selection and selection > 1 then
+        M.update_plugin(plugin_names[selection])
+      end
+    end
+  elseif action == "remove" then
+    M.remove_plugin_interactive()
+  elseif action == "disable" then
+    local plugins = vim.pack.get()
+    if #plugins == 0 then
+      ui.info("No plugins to disable.", "Disable")
+    else
+      local plugin_names = {}
+      for _, plugin in ipairs(plugins) do
+        local name = plugin.spec and plugin.spec.name or "Unknown"
+        table.insert(plugin_names, name)
+      end
+      
+      local selection = ui.select("Choose plugin to disable:", plugin_names)
+      if selection then
+        M.disable_plugin(plugin_names[selection])
+      end
+    end
+  elseif action == "enable" then
+    local disabled_plugins = utils.get_disabled_plugins()
+    if vim.tbl_isempty(disabled_plugins) then
+      ui.info("No disabled plugins to enable.", "Enable")
+    else
+      local plugin_names = {}
+      for name, _ in pairs(disabled_plugins) do
+        table.insert(plugin_names, name)
+      end
+      
+      local selection = ui.select("Choose plugin to enable:", plugin_names)
+      if selection then
+        M.enable_plugin(plugin_names[selection])
+      end
+    end
+  elseif action == "inactive" then
+    local inactive_plugins = {}
+    local plugins = vim.pack.get()
+    for _, plugin in ipairs(plugins) do
+      if not plugin.active then
+        local name = plugin.spec and plugin.spec.name or "Unknown"
+        table.insert(inactive_plugins, name)
+      end
+    end
+    
+    if #inactive_plugins == 0 then
+      ui.info("No inactive plugins found.", "Inactive Plugins")
+    else
+      local options = {"Disable All Inactive", "Remove All Inactive", "List Only"}
+      local selection = ui.select("What would you like to do with inactive plugins?", options)
+      
+      if selection == 1 then
+        M.disable_inactive_plugins()
+      elseif selection == 2 then
+        M.remove_inactive_plugins()
+      elseif selection == 3 then
+        local info = {"Inactive plugins:"}
+        for _, name in ipairs(inactive_plugins) do
+          table.insert(info, "- " .. name)
+        end
+        ui.info(table.concat(info, "\n"), "Inactive Plugins")
+      end
+    end
+  elseif action == "info" then
+    local plugins = vim.pack.get()
+    if #plugins == 0 then
+      ui.info("No plugins installed.", "Plugin Info")
+    else
+      local plugin_names = {}
+      for _, plugin in ipairs(plugins) do
+        local name = plugin.spec and plugin.spec.name or "Unknown"
+        table.insert(plugin_names, name)
+      end
+      
+      local selection = ui.select("Choose plugin for info:", plugin_names)
+      if selection then
+        local plugin = plugins[selection]
+        local info = {
+          "Plugin: " .. (plugin.spec and plugin.spec.name or "Unknown"),
+          "Source: " .. (plugin.spec and plugin.spec.src or "Unknown"),
+          "Status: " .. (plugin.active and "Active" or "Inactive"),
+          "Type: " .. (plugin.type or "Unknown")
+        }
+        ui.info(table.concat(info, "\n"), "Plugin Information")
+      end
+    end
+  end
+end
+
 -- Setup function to create all commands
 function M.setup()
   -- Handle cleanup when plugins are added, updated, or removed
@@ -1257,6 +1390,13 @@ function M.setup()
   end, {
     desc = "Update all installed plugins"
   })
+
+  -- Main menu command
+  vim.api.nvim_create_user_command('PackMenu', function()
+    show_main_menu()
+  end, {
+    desc = "Show Pack Manager main menu"
+  })
 end
 
 -- Export functions for programmatic use
@@ -1272,6 +1412,7 @@ M.list_inactive_plugins = list_inactive_plugins
 M.add_plugin = add_plugin
 M.update_plugin = update_plugin
 M.update_all_plugins = update_all_plugins
+M.show_main_menu = show_main_menu
 
 -- Export test-only functions (only exposed for testing)
 if _G._TEST then

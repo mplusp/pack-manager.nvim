@@ -50,6 +50,30 @@ vim.pack.add({
 
 ## Commands
 
+### Main Menu Interface
+
+#### `:PackMenu`
+Opens a central floating menu interface similar to Mason's design, providing easy access to all pack-manager functionality.
+
+```
+:PackMenu
+```
+
+The menu displays the following options:
+- **Add Plugin** - Install a new plugin
+- **List Plugins** - Show all installed plugins  
+- **Update Plugins** - Update installed plugins
+- **Remove Plugin** - Remove a plugin
+- **Disable Plugin** - Disable a plugin temporarily
+- **Enable Plugin** - Re-enable a disabled plugin
+- **Manage Inactive** - Handle inactive plugins
+- **Plugin Info** - Show plugin information
+
+**Navigation:**
+- Press number keys (1-8) to select an option
+- Press `q` or `Esc` to exit the menu
+- Uses floating windows with rounded borders and centered positioning
+
 ### Plugin Installation
 
 #### `:PackAdd <plugin-name | owner/repo | full-url>`
@@ -254,6 +278,9 @@ The plugin exports functions for programmatic use:
 
 ```lua
 local pack_manager = require('pack-manager')
+
+-- Show the main menu programmatically
+pack_manager.show_main_menu()
 
 -- Update a specific plugin
 pack_manager.update_plugin('tokyonight.nvim')

@@ -271,4 +271,81 @@ function M.info(message, title)
   close_window(win)
 end
 
+-- Show a central menu similar to Mason's interface
+function M.menu()
+  local menu_options = {
+    { key = "1", label = "Add Plugin", desc = "Install a new plugin", action = "add" },
+    { key = "2", label = "List Plugins", desc = "Show all installed plugins", action = "list" },
+    { key = "3", label = "Update Plugins", desc = "Update installed plugins", action = "update" },
+    { key = "4", label = "Remove Plugin", desc = "Remove a plugin", action = "remove" },
+    { key = "5", label = "Disable Plugin", desc = "Disable a plugin temporarily", action = "disable" },
+    { key = "6", label = "Enable Plugin", desc = "Re-enable a disabled plugin", action = "enable" },
+    { key = "7", label = "Manage Inactive", desc = "Handle inactive plugins", action = "inactive" },
+    { key = "8", label = "Plugin Info", desc = "Show plugin information", action = "info" },
+  }
+
+  -- Calculate dimensions
+  local max_label_width = 0
+  local max_desc_width = 0
+  for _, option in ipairs(menu_options) do
+    max_label_width = math.max(max_label_width, #option.label)
+    max_desc_width = math.max(max_desc_width, #option.desc)
+  end
+
+  local content_width = 4 + max_label_width + 3 + max_desc_width -- "1. " + label + " - " + desc
+  local width = math.max(60, content_width + 6) -- padding
+  local height = #menu_options + 6 -- options + header + footer + padding
+
+  local buf, win = create_centered_window(width, height, "Pack Manager")
+
+  -- Build content
+  local content = {
+    "Choose an action:",
+    "",
+  }
+
+  for _, option in ipairs(menu_options) do
+    local line = string.format("%s. %-" .. max_label_width .. "s - %s", 
+                               option.key, option.label, option.desc)
+    table.insert(content, line)
+  end
+
+  table.insert(content, "")
+  table.insert(content, "Press number key to select, q/Esc to quit")
+
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+
+  -- Position cursor on first option
+  vim.api.nvim_win_set_cursor(win, {3, 0})
+
+  local result = nil
+
+  -- Wait for user input (skip in test mode)
+  if M._test_mode then
+    close_window(win)
+    return "add" -- default for testing
+  end
+
+  -- Use vim.fn.getchar() to wait for input properly
+  local key
+  repeat
+    vim.cmd('redraw')
+    key = vim.fn.getchar()
+
+    -- Handle the key press
+    if key >= string.byte('1') and key <= string.byte('8') then
+      local selected = key - string.byte('0')
+      if selected <= #menu_options then
+        result = menu_options[selected].action
+      end
+    elseif key == 27 or key == string.byte('q') then -- Escape or q
+      result = nil
+    end
+  until result ~= nil or result == nil and (key == 27 or key == string.byte('q'))
+
+  close_window(win)
+  return result
+end
+
 return M

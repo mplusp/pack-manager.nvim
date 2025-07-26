@@ -797,4 +797,20 @@ describe("pack-manager main module", function()
       assert.is_true(info.info.has_colorscheme_command)
     end)
   end)
+
+  describe("main menu function", function()
+    it("should be callable", function()
+      assert.is_function(pack_manager.show_main_menu)
+    end)
+
+    it("should handle menu in test mode", function()
+      -- Mock UI for menu test
+      mock_ui_responses({})
+
+      -- Should not throw error in test mode
+      assert.has_no.errors(function()
+        pack_manager.show_main_menu()
+      end)
+    end)
+  end)
 end)
