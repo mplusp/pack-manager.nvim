@@ -5,7 +5,7 @@ local utils = require('pack-manager.utils')
 local ui = require('pack-manager.ui')
 local M = {}
 
-M.version = "0.5.0"
+M.version = "0.5.1"
 
 -- Forward declarations for local functions
 local create_plugin_config
