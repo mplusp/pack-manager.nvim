@@ -30,7 +30,7 @@ describe("pack-manager main module", function()
       end
       return default
     end
-    
+
     ui.select = function(message, options, default_index)
       for pattern, response in pairs(responses.select or {}) do
         if message:match(pattern) then
@@ -39,7 +39,7 @@ describe("pack-manager main module", function()
       end
       return default_index
     end
-    
+
     ui.info = function(message, title)
       -- Just capture for testing
     end
@@ -709,8 +709,6 @@ describe("pack-manager main module", function()
     end)
 
     it("should not prompt for immediate loading when set_colorscheme is false", function()
-      local input_called = false
-
       vim.fn.writefile = function() return 0 end
       vim.fn.filereadable = function() return 0 end
       vim.fn.mkdir = function() return 0 end
@@ -721,7 +719,7 @@ describe("pack-manager main module", function()
           ["Load and apply the colorscheme now"] = false
         }
       })
-      
+
       -- The test logic changes - we'll check that the UI function wasn't called
       -- since set_colorscheme is false
 

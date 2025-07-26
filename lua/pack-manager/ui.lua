@@ -113,11 +113,11 @@ function M.confirm(message, default_yes)
     close_window(win)
     -- Check if we have a test override for this specific message
     if M._test_responses and M._test_responses[message] ~= nil then
-      return M._test_responses[message] 
+      return M._test_responses[message]
     end
     return default_yes and true or false
   end
-  
+
   vim.cmd('redraw')
   while result == nil do
     vim.cmd('sleep 50m')
