@@ -106,20 +106,26 @@ function M.confirm(message, default_yes)
     vim.cmd('redraw')
     key = vim.fn.getchar()
 
-    -- Convert key to number if it's a string (arrow keys return strings)
+    -- Handle different key types
     if type(key) == "string" then
-      key = vim.fn.char2nr(key)
-    end
-
-    -- Handle the key press
-    if type(key) == "number" and (key == string.byte('y') or key == string.byte('Y')) then
-      result = true
-    elseif type(key) == "number" and (key == string.byte('n') or key == string.byte('N')) then
-      result = false
-    elseif type(key) == "number" and key == 13 then -- Enter key
-      result = default_yes and true or false
-    elseif type(key) == "number" and (key == 27 or key == string.byte('q')) then -- Escape or q
-      result = false
+      -- For confirm dialog, we'll ignore arrow keys but handle single ESC
+      local bytes = {key:byte(1, -1)}
+      if #bytes == 1 and bytes[1] == 27 then
+        result = false
+      end
+      -- Ignore other escape sequences like arrow keys
+    elseif type(key) == "number" then
+      if key == string.byte('y') or key == string.byte('Y') then
+        result = true
+      elseif key == string.byte('n') or key == string.byte('N') then
+        result = false
+      elseif key == 13 then -- Enter key
+        result = default_yes and true or false
+      elseif key == 27 then -- Escape key
+        result = false
+      elseif key == string.byte('q') or key == string.byte('Q') then
+        result = false
+      end
     end
   until result ~= nil
 
@@ -204,31 +210,47 @@ function M.select(message, options, default_index)
     vim.cmd('redraw')
     key = vim.fn.getchar()
 
-    -- Convert key to number if it's a string (arrow keys return strings)
+    -- Handle different key types
     if type(key) == "string" then
-      key = vim.fn.char2nr(key)
-    end
-
-    -- Handle the key press
-    if type(key) == "number" and key == string.byte('j') then
-      current_index = math.min(current_index + 1, #options)
-      update_display()
-    elseif type(key) == "number" and key == string.byte('k') then
-      current_index = math.max(current_index - 1, 1)
-      update_display()
-    elseif type(key) == "number" and key >= string.byte('1') and key <= string.byte('9') then
-      local selected = key - string.byte('0')
-      if selected <= #options then
-        result = selected
+      -- Handle special keys (arrow keys come as strings)
+      local bytes = {key:byte(1, -1)}
+      if #bytes == 3 and bytes[1] == 27 and bytes[2] == 91 then
+        -- ESC[A = Up, ESC[B = Down
+        if bytes[3] == 65 then -- Up arrow
+          current_index = math.max(current_index - 1, 1)
+          update_display()
+        elseif bytes[3] == 66 then -- Down arrow
+          current_index = math.min(current_index + 1, #options)
+          update_display()
+        end
+      end
+    elseif type(key) == "number" then
+      -- Handle regular keys
+      if key == string.byte('j') or key == string.byte('J') then
+        current_index = math.min(current_index + 1, #options)
+        update_display()
+      elseif key == string.byte('k') or key == string.byte('K') then
+        current_index = math.max(current_index - 1, 1)
+        update_display()
+      elseif key >= string.byte('1') and key <= string.byte('9') then
+        local selected = key - string.byte('0')
+        if selected <= #options then
+          result = selected
+          done = true
+        end
+      elseif key == 13 then -- Enter key
+        result = current_index
+        done = true
+      elseif key == 27 then -- Escape key (single ESC)
+        result = nil
+        done = true
+      elseif key == string.byte('q') or key == string.byte('Q') then
+        result = nil
         done = true
       end
-    elseif type(key) == "number" and key == 13 then -- Enter key
-      result = current_index
-      done = true
-    elseif type(key) == "number" and (key == 27 or key == string.byte('q')) then -- Escape or q
-      result = nil
-      done = true
     end
+
+    -- Ignore unhandled escape sequences
   until done
 
   close_window(win)
@@ -347,19 +369,25 @@ function M.menu()
     vim.cmd('redraw')
     key = vim.fn.getchar()
 
-    -- Convert key to number if it's a string (arrow keys return strings)
+    -- Handle different key types
     if type(key) == "string" then
-      key = vim.fn.char2nr(key)
-    end
-
-    -- Handle the key press
-    if type(key) == "number" and key >= string.byte('1') and key <= string.byte('8') then
+      -- For menu dialog, handle single ESC but ignore arrow keys
+      local bytes = {key:byte(1, -1)}
+      if #bytes == 1 and bytes[1] == 27 then
+        result = nil
+        break
+      end
+      -- Ignore other escape sequences like arrow keys
+    elseif type(key) == "number" and key >= string.byte('1') and key <= string.byte('8') then
       local selected = key - string.byte('0')
       if selected <= #menu_options then
         result = menu_options[selected].action
         break
       end
-    elseif type(key) == "number" and (key == 27 or key == string.byte('q')) then -- Escape or q
+    elseif type(key) == "number" and key == 27 then -- Escape key
+      result = nil
+      break
+    elseif type(key) == "number" and (key == string.byte('q') or key == string.byte('Q')) then
       result = nil
       break
     end

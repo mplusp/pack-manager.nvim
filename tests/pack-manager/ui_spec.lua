@@ -201,6 +201,18 @@ describe("pack-manager ui module", function()
         assert.are.equal(2, result)
       end)
 
+      it("should handle arrow key navigation", function()
+        -- Test up arrow
+        _G.simulate_keys({"\027[B", 13}) -- Down arrow then Enter
+        local result = ui.select("Choose:", options)
+        assert.are.equal(2, result)
+
+        -- Test multiple arrow movements
+        _G.simulate_keys({"\027[B", "\027[B", "\027[A", 13}) -- Down, down, up, Enter
+        result = ui.select("Choose:", options)
+        assert.are.equal(2, result)
+      end)
+
       it("should handle Escape key", function()
         _G.simulate_keys({27}) -- Escape
         local result = ui.select("Choose:", options)
@@ -259,7 +271,7 @@ describe("pack-manager ui module", function()
 
       it("should handle string keys (like arrow keys) without error", function()
         -- Simulate arrow key returning a string
-        _G.simulate_keys({"<Up>", string.byte('q')}) -- Arrow key as string, then q
+        _G.simulate_keys({"\027[A", string.byte('q')}) -- Up arrow key as string, then q
         local result = ui.menu()
         assert.is_nil(result)
       end)
@@ -268,15 +280,15 @@ describe("pack-manager ui module", function()
     describe("key type handling tests", function()
       it("should handle mixed key types in confirm dialog", function()
         -- Test with string key followed by number key
-        _G.simulate_keys({"<Down>", string.byte('y')}) -- Arrow key as string, then y
+        _G.simulate_keys({"\027[B", string.byte('y')}) -- Down arrow key as string, then y
         local result = ui.confirm("Test?", false)
         assert.is_true(result)
       end)
 
       it("should handle mixed key types in select dialog", function()
         local options = {"Option 1", "Option 2", "Option 3"}
-        -- Test with string key followed by number key
-        _G.simulate_keys({"<Left>", 13}) -- Arrow key as string, then Enter
+        -- Test with arrow key navigation
+        _G.simulate_keys({"\027[B", "\027[A", 13}) -- Down arrow, up arrow, then Enter
         local result = ui.select("Choose:", options)
         assert.are.equal(1, result)
       end)
