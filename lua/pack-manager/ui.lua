@@ -328,32 +328,43 @@ function M.menu()
     max_desc_width = math.max(max_desc_width, #option.desc)
   end
 
-  local content_width = 4 + max_label_width + 3 + max_desc_width -- "1. " + label + " - " + desc
+  local content_width = 6 + max_label_width + 3 + max_desc_width -- "► 1. " + label + " - " + desc
   local width = math.max(60, content_width + 6) -- padding
   local height = #menu_options + 6 -- options + header + footer + padding
 
   local buf, win = create_centered_window(width, height, "Pack Manager")
 
-  -- Build content
-  local content = {
-    "Choose an action:",
-    "",
-  }
-
-  for _, option in ipairs(menu_options) do
-    local line = string.format("%s. %-" .. max_label_width .. "s - %s",
-                               option.key, option.label, option.desc)
-    table.insert(content, line)
+  -- Header lines
+  local header_lines = {"Choose an action:", ""}
+  
+  -- Current selection
+  local current_index = 1
+  
+  -- Update function to show cursor
+  local function update_display()
+    local content = {}
+    vim.list_extend(content, header_lines)
+    
+    for i, option in ipairs(menu_options) do
+      local prefix = i == current_index and "► " or "  "
+      local line = string.format("%s%s. %-" .. max_label_width .. "s - %s",
+                                 prefix, option.key, option.label, option.desc)
+      table.insert(content, line)
+    end
+    
+    table.insert(content, "")
+    table.insert(content, "Use ↑↓ or j/k to navigate, Enter to select, number key for quick select, q/Esc to quit")
+    
+    vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
+    vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+    
+    -- Position cursor on current option
+    vim.api.nvim_win_set_cursor(win, {2 + current_index, 0})
   end
-
-  table.insert(content, "")
-  table.insert(content, "Press number key to select, q/Esc to quit")
-
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-
-  -- Position cursor on first option
-  vim.api.nvim_win_set_cursor(win, {3, 0})
+  
+  -- Initial display
+  update_display()
 
   local result = nil -- luacheck: ignore 311
 
@@ -364,6 +375,7 @@ function M.menu()
   end
 
   -- Use vim.fn.getchar() to wait for input properly
+  local done = false
   local key
   repeat
     vim.cmd('redraw')
@@ -371,27 +383,48 @@ function M.menu()
 
     -- Handle different key types
     if type(key) == "string" then
-      -- For menu dialog, handle single ESC but ignore arrow keys
+      -- Handle special keys (arrow keys come as strings)
       local bytes = {key:byte(1, -1)}
-      if #bytes == 1 and bytes[1] == 27 then
+      if #bytes == 3 and bytes[1] == 27 and bytes[2] == 91 then
+        -- ESC[A = Up, ESC[B = Down
+        if bytes[3] == 65 then -- Up arrow
+          current_index = math.max(current_index - 1, 1)
+          update_display()
+        elseif bytes[3] == 66 then -- Down arrow
+          current_index = math.min(current_index + 1, #menu_options)
+          update_display()
+        end
+      elseif #bytes == 1 and bytes[1] == 27 then
+        -- Single ESC
         result = nil
-        break
+        done = true
       end
-      -- Ignore other escape sequences like arrow keys
-    elseif type(key) == "number" and key >= string.byte('1') and key <= string.byte('8') then
-      local selected = key - string.byte('0')
-      if selected <= #menu_options then
-        result = menu_options[selected].action
-        break
+    elseif type(key) == "number" then
+      -- Handle regular keys
+      if key == string.byte('j') or key == string.byte('J') then
+        current_index = math.min(current_index + 1, #menu_options)
+        update_display()
+      elseif key == string.byte('k') or key == string.byte('K') then
+        current_index = math.max(current_index - 1, 1)
+        update_display()
+      elseif key >= string.byte('1') and key <= string.byte('8') then
+        local selected = key - string.byte('0')
+        if selected <= #menu_options then
+          result = menu_options[selected].action
+          done = true
+        end
+      elseif key == 13 then -- Enter key
+        result = menu_options[current_index].action
+        done = true
+      elseif key == 27 then -- Escape key
+        result = nil
+        done = true
+      elseif key == string.byte('q') or key == string.byte('Q') then
+        result = nil
+        done = true
       end
-    elseif type(key) == "number" and key == 27 then -- Escape key
-      result = nil
-      break
-    elseif type(key) == "number" and (key == string.byte('q') or key == string.byte('Q')) then
-      result = nil
-      break
     end
-  until false
+  until done
 
   close_window(win)
   return result
