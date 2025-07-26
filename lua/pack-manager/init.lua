@@ -998,11 +998,11 @@ end
 -- Show main menu and handle action selection
 local function show_main_menu()
   local action = ui.menu()
-  
+
   if not action then
     return -- User cancelled
   end
-  
+
   -- Handle the selected action
   if action == "add" then
     local plugin_spec = ui.input("Enter plugin name/URL")
@@ -1033,7 +1033,7 @@ local function show_main_menu()
         table.insert(plugin_names, name)
       end
       table.insert(plugin_names, 1, "Update All Plugins")
-      
+
       local selection = ui.select("Choose plugin to update:", plugin_names, 1)
       if selection == 1 then
         M.update_all_plugins()
@@ -1053,7 +1053,7 @@ local function show_main_menu()
         local name = plugin.spec and plugin.spec.name or "Unknown"
         table.insert(plugin_names, name)
       end
-      
+
       local selection = ui.select("Choose plugin to disable:", plugin_names)
       if selection then
         M.disable_plugin(plugin_names[selection])
@@ -1068,7 +1068,7 @@ local function show_main_menu()
       for name, _ in pairs(disabled_plugins) do
         table.insert(plugin_names, name)
       end
-      
+
       local selection = ui.select("Choose plugin to enable:", plugin_names)
       if selection then
         M.enable_plugin(plugin_names[selection])
@@ -1083,13 +1083,13 @@ local function show_main_menu()
         table.insert(inactive_plugins, name)
       end
     end
-    
+
     if #inactive_plugins == 0 then
       ui.info("No inactive plugins found.", "Inactive Plugins")
     else
       local options = {"Disable All Inactive", "Remove All Inactive", "List Only"}
       local selection = ui.select("What would you like to do with inactive plugins?", options)
-      
+
       if selection == 1 then
         M.disable_inactive_plugins()
       elseif selection == 2 then
@@ -1112,7 +1112,7 @@ local function show_main_menu()
         local name = plugin.spec and plugin.spec.name or "Unknown"
         table.insert(plugin_names, name)
       end
-      
+
       local selection = ui.select("Choose plugin for info:", plugin_names)
       if selection then
         local plugin = plugins[selection]

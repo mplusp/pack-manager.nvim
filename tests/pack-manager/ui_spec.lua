@@ -11,7 +11,7 @@ describe("pack-manager ui module", function()
 
     -- Load the module fresh
     ui = require('pack-manager.ui')
-    
+
     -- Enable test mode
     ui._test_mode = true
   end)
@@ -20,19 +20,19 @@ describe("pack-manager ui module", function()
     it("should return default value in test mode", function()
       local result = ui.confirm("Test confirmation?", true)
       assert.is_true(result)
-      
+
       result = ui.confirm("Test confirmation?", false)
       assert.is_false(result)
     end)
-    
+
     it("should handle test responses", function()
       ui._test_responses = {
         ["Specific message"] = false
       }
-      
+
       local result = ui.confirm("Specific message", true)
       assert.is_false(result)
-      
+
       -- Reset test responses
       ui._test_responses = nil
     end)
@@ -41,14 +41,14 @@ describe("pack-manager ui module", function()
   describe("select dialog", function()
     it("should return default index in test mode", function()
       local options = {"Option 1", "Option 2", "Option 3"}
-      
+
       local result = ui.select("Choose option:", options, 2)
       assert.are.equal(2, result)
-      
+
       result = ui.select("Choose option:", options)
       assert.are.equal(1, result) -- default to 1 if no default provided
     end)
-    
+
     it("should handle empty options", function()
       local options = {}
       local result = ui.select("Choose option:", options)
@@ -60,7 +60,7 @@ describe("pack-manager ui module", function()
     it("should return default text in test mode", function()
       local result = ui.input("Enter name:", "default")
       assert.are.equal("default", result)
-      
+
       result = ui.input("Enter name:")
       assert.are.equal("", result)
     end)
@@ -85,14 +85,14 @@ describe("pack-manager ui module", function()
     before_each(function()
       -- Disable test mode for these specific tests
       ui._test_mode = false
-      
+
       -- Mock vim.fn.getchar to simulate key presses
       local key_queue = {}
       local key_index = 1
-      
+
       -- Store original getchar
       _G.original_getchar = vim.fn.getchar
-      
+
       -- Helper to set up key simulation
       _G.simulate_keys = function(keys)
         key_queue = keys
@@ -107,142 +107,142 @@ describe("pack-manager ui module", function()
         end
       end
     end)
-    
+
     after_each(function()
       -- Restore original getchar
       vim.fn.getchar = _G.original_getchar
       ui._test_mode = true
     end)
-    
+
     describe("confirm dialog key handling", function()
       it("should handle 'y' key", function()
-        simulate_keys({string.byte('y')})
+        _G._G.simulate_keys({string.byte('y')})
         local result = ui.confirm("Test?", false)
         assert.is_true(result)
       end)
-      
+
       it("should handle 'Y' key", function()
-        simulate_keys({string.byte('Y')})
+        _G.simulate_keys({string.byte('Y')})
         local result = ui.confirm("Test?", false)
         assert.is_true(result)
       end)
-      
+
       it("should handle 'n' key", function()
-        simulate_keys({string.byte('n')})
+        _G.simulate_keys({string.byte('n')})
         local result = ui.confirm("Test?", true)
         assert.is_false(result)
       end)
-      
+
       it("should handle 'N' key", function()
-        simulate_keys({string.byte('N')})
+        _G.simulate_keys({string.byte('N')})
         local result = ui.confirm("Test?", true)
         assert.is_false(result)
       end)
-      
+
       it("should handle Enter key with default", function()
-        simulate_keys({13}) -- Enter key
+        _G.simulate_keys({13}) -- Enter key
         local result = ui.confirm("Test?", true)
         assert.is_true(result)
-        
-        simulate_keys({13}) -- Enter key
+
+        _G.simulate_keys({13}) -- Enter key
         result = ui.confirm("Test?", false)
         assert.is_false(result)
       end)
-      
+
       it("should handle Escape key", function()
-        simulate_keys({27}) -- Escape
+        _G.simulate_keys({27}) -- Escape
         local result = ui.confirm("Test?", true)
         assert.is_false(result)
       end)
-      
+
       it("should handle 'q' key", function()
-        simulate_keys({string.byte('q')})
+        _G.simulate_keys({string.byte('q')})
         local result = ui.confirm("Test?", true)
         assert.is_false(result)
       end)
     end)
-    
+
     describe("select dialog key handling", function()
       local options = {"Option 1", "Option 2", "Option 3"}
-      
+
       it("should handle number keys", function()
-        simulate_keys({string.byte('2')})
+        _G.simulate_keys({string.byte('2')})
         local result = ui.select("Choose:", options)
         assert.are.equal(2, result)
-        
-        simulate_keys({string.byte('3')})
+
+        _G.simulate_keys({string.byte('3')})
         result = ui.select("Choose:", options)
         assert.are.equal(3, result)
       end)
-      
+
       it("should handle Enter key", function()
-        simulate_keys({13}) -- Enter on first option
+        _G.simulate_keys({13}) -- Enter on first option
         local result = ui.select("Choose:", options)
         assert.are.equal(1, result)
       end)
-      
+
       it("should handle j/k navigation", function()
-        simulate_keys({string.byte('j'), 13}) -- Down then Enter
+        _G.simulate_keys({string.byte('j'), 13}) -- Down then Enter
         local result = ui.select("Choose:", options)
         assert.are.equal(2, result)
-        
-        simulate_keys({string.byte('j'), string.byte('j'), string.byte('k'), 13}) -- Down, down, up, Enter
+
+        _G.simulate_keys({string.byte('j'), string.byte('j'), string.byte('k'), 13}) -- Down, down, up, Enter
         result = ui.select("Choose:", options)
         assert.are.equal(2, result)
       end)
-      
+
       it("should handle Escape key", function()
-        simulate_keys({27}) -- Escape
+        _G.simulate_keys({27}) -- Escape
         local result = ui.select("Choose:", options)
         assert.is_nil(result)
       end)
-      
+
       it("should handle 'q' key", function()
-        simulate_keys({string.byte('q')})
+        _G.simulate_keys({string.byte('q')})
         local result = ui.select("Choose:", options)
         assert.is_nil(result)
       end)
-      
+
       it("should ignore invalid number keys", function()
-        simulate_keys({string.byte('9'), 13}) -- 9 is out of range, then Enter
+        _G.simulate_keys({string.byte('9'), 13}) -- 9 is out of range, then Enter
         local result = ui.select("Choose:", options)
         assert.are.equal(1, result) -- Should still be on first option
       end)
     end)
-    
+
     describe("menu dialog key handling", function()
       it("should handle number keys 1-8", function()
-        simulate_keys({string.byte('1')})
+        _G.simulate_keys({string.byte('1')})
         local result = ui.menu()
         assert.are.equal("add", result)
-        
-        simulate_keys({string.byte('2')})
+
+        _G.simulate_keys({string.byte('2')})
         result = ui.menu()
         assert.are.equal("list", result)
-        
-        simulate_keys({string.byte('3')})
+
+        _G.simulate_keys({string.byte('3')})
         result = ui.menu()
         assert.are.equal("update", result)
-        
-        simulate_keys({string.byte('8')})
+
+        _G.simulate_keys({string.byte('8')})
         result = ui.menu()
         assert.are.equal("info", result)
       end)
-      
+
       it("should handle Escape key", function()
-        simulate_keys({27}) -- Escape
+        _G.simulate_keys({27}) -- Escape
         local result = ui.menu()
         assert.is_nil(result)
       end)
-      
+
       it("should handle 'q' key", function()
-        simulate_keys({string.byte('q')})
+        _G.simulate_keys({string.byte('q')})
         local result = ui.menu()
         assert.is_nil(result)
       end)
-      
+
       it("should ignore invalid keys", function()
-        simulate_keys({string.byte('9'), string.byte('q')}) -- 9 is out of range, then q
+        _G.simulate_keys({string.byte('9'), string.byte('q')}) -- 9 is out of range, then q
         local result = ui.menu()
         assert.is_nil(result)
       end)

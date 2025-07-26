@@ -309,7 +309,7 @@ function M.menu()
   }
 
   for _, option in ipairs(menu_options) do
-    local line = string.format("%s. %-" .. max_label_width .. "s - %s", 
+    local line = string.format("%s. %-" .. max_label_width .. "s - %s",
                                option.key, option.label, option.desc)
     table.insert(content, line)
   end
@@ -323,7 +323,7 @@ function M.menu()
   -- Position cursor on first option
   vim.api.nvim_win_set_cursor(win, {3, 0})
 
-  local result = nil
+  local result = nil -- luacheck: ignore 311
 
   -- Wait for user input (skip in test mode)
   if M._test_mode then
