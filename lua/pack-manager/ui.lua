@@ -106,14 +106,19 @@ function M.confirm(message, default_yes)
     vim.cmd('redraw')
     key = vim.fn.getchar()
 
+    -- Convert key to number if it's a string (arrow keys return strings)
+    if type(key) == "string" then
+      key = vim.fn.char2nr(key)
+    end
+
     -- Handle the key press
-    if key == string.byte('y') or key == string.byte('Y') then
+    if type(key) == "number" and (key == string.byte('y') or key == string.byte('Y')) then
       result = true
-    elseif key == string.byte('n') or key == string.byte('N') then
+    elseif type(key) == "number" and (key == string.byte('n') or key == string.byte('N')) then
       result = false
-    elseif key == 13 then -- Enter key
+    elseif type(key) == "number" and key == 13 then -- Enter key
       result = default_yes and true or false
-    elseif key == 27 or key == string.byte('q') then -- Escape or q
+    elseif type(key) == "number" and (key == 27 or key == string.byte('q')) then -- Escape or q
       result = false
     end
   until result ~= nil
@@ -199,23 +204,28 @@ function M.select(message, options, default_index)
     vim.cmd('redraw')
     key = vim.fn.getchar()
 
+    -- Convert key to number if it's a string (arrow keys return strings)
+    if type(key) == "string" then
+      key = vim.fn.char2nr(key)
+    end
+
     -- Handle the key press
-    if key == string.byte('j') then
+    if type(key) == "number" and key == string.byte('j') then
       current_index = math.min(current_index + 1, #options)
       update_display()
-    elseif key == string.byte('k') then
+    elseif type(key) == "number" and key == string.byte('k') then
       current_index = math.max(current_index - 1, 1)
       update_display()
-    elseif key >= string.byte('1') and key <= string.byte('9') then
+    elseif type(key) == "number" and key >= string.byte('1') and key <= string.byte('9') then
       local selected = key - string.byte('0')
       if selected <= #options then
         result = selected
         done = true
       end
-    elseif key == 13 then -- Enter key
+    elseif type(key) == "number" and key == 13 then -- Enter key
       result = current_index
       done = true
-    elseif key == 27 or key == string.byte('q') then -- Escape or q
+    elseif type(key) == "number" and (key == 27 or key == string.byte('q')) then -- Escape or q
       result = nil
       done = true
     end
@@ -337,14 +347,19 @@ function M.menu()
     vim.cmd('redraw')
     key = vim.fn.getchar()
 
+    -- Convert key to number if it's a string (arrow keys return strings)
+    if type(key) == "string" then
+      key = vim.fn.char2nr(key)
+    end
+
     -- Handle the key press
-    if key >= string.byte('1') and key <= string.byte('8') then
+    if type(key) == "number" and key >= string.byte('1') and key <= string.byte('8') then
       local selected = key - string.byte('0')
       if selected <= #menu_options then
         result = menu_options[selected].action
         break
       end
-    elseif key == 27 or key == string.byte('q') then -- Escape or q
+    elseif type(key) == "number" and (key == 27 or key == string.byte('q')) then -- Escape or q
       result = nil
       break
     end

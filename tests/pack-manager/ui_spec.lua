@@ -90,8 +90,9 @@ describe("pack-manager ui module", function()
       local key_queue = {}
       local key_index = 1
 
-      -- Store original getchar
+      -- Store original getchar and char2nr
       _G.original_getchar = vim.fn.getchar
+      _G.original_char2nr = vim.fn.char2nr
 
       -- Helper to set up key simulation
       _G.simulate_keys = function(keys)
@@ -106,11 +107,20 @@ describe("pack-manager ui module", function()
           return 27 -- Default to escape if no more keys
         end
       end
+
+      -- Mock char2nr to handle strings (like arrow keys)
+      vim.fn.char2nr = function(str)
+        if type(str) == "string" and #str > 0 then
+          return string.byte(str, 1)
+        end
+        return 0
+      end
     end)
 
     after_each(function()
-      -- Restore original getchar
+      -- Restore original getchar and char2nr
       vim.fn.getchar = _G.original_getchar
+      vim.fn.char2nr = _G.original_char2nr
       ui._test_mode = true
     end)
 
@@ -245,6 +255,30 @@ describe("pack-manager ui module", function()
         _G.simulate_keys({string.byte('9'), string.byte('q')}) -- 9 is out of range, then q
         local result = ui.menu()
         assert.is_nil(result)
+      end)
+
+      it("should handle string keys (like arrow keys) without error", function()
+        -- Simulate arrow key returning a string
+        _G.simulate_keys({"<Up>", string.byte('q')}) -- Arrow key as string, then q
+        local result = ui.menu()
+        assert.is_nil(result)
+      end)
+    end)
+
+    describe("key type handling tests", function()
+      it("should handle mixed key types in confirm dialog", function()
+        -- Test with string key followed by number key
+        _G.simulate_keys({"<Down>", string.byte('y')}) -- Arrow key as string, then y
+        local result = ui.confirm("Test?", false)
+        assert.is_true(result)
+      end)
+
+      it("should handle mixed key types in select dialog", function()
+        local options = {"Option 1", "Option 2", "Option 3"}
+        -- Test with string key followed by number key
+        _G.simulate_keys({"<Left>", 13}) -- Arrow key as string, then Enter
+        local result = ui.select("Choose:", options)
+        assert.are.equal(1, result)
       end)
     end)
   end)
