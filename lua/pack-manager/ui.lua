@@ -90,24 +90,6 @@ function M.confirm(message, default_yes)
 
   local result = nil
 
-  -- Key mappings
-  local function set_result(value)
-    result = value
-    close_window(win)
-  end
-
-  -- Map keys
-  local opts = { buffer = buf, noremap = true, silent = true }
-  vim.keymap.set('n', 'y', function() set_result(true) end, opts)
-  vim.keymap.set('n', 'Y', function() set_result(true) end, opts)
-  vim.keymap.set('n', 'n', function() set_result(false) end, opts)
-  vim.keymap.set('n', 'N', function() set_result(false) end, opts)
-  vim.keymap.set('n', '<CR>', function()
-    set_result(default_yes and true or false)
-  end, opts)
-  vim.keymap.set('n', '<Esc>', function() set_result(false) end, opts)
-  vim.keymap.set('n', 'q', function() set_result(false) end, opts)
-
   -- Wait for user input (skip in test mode)
   if M._test_mode then
     close_window(win)
@@ -118,12 +100,25 @@ function M.confirm(message, default_yes)
     return default_yes and true or false
   end
 
-  vim.cmd('redraw')
-  while result == nil do
-    vim.cmd('sleep 50m')
+  -- Use vim.fn.getchar() to wait for input properly
+  local key
+  repeat
     vim.cmd('redraw')
-  end
+    key = vim.fn.getchar()
 
+    -- Handle the key press
+    if key == string.byte('y') or key == string.byte('Y') then
+      result = true
+    elseif key == string.byte('n') or key == string.byte('N') then
+      result = false
+    elseif key == 13 then -- Enter key
+      result = default_yes and true or false
+    elseif key == 27 or key == string.byte('q') then -- Escape or q
+      result = false
+    end
+  until result ~= nil
+
+  close_window(win)
   return result
 end
 
@@ -187,46 +182,6 @@ function M.select(message, options, default_index)
     vim.api.nvim_win_set_cursor(win, {start_line + current_index, 0})
   end
 
-  local function set_result(value)
-    result = value
-    close_window(win)
-  end
-
-  -- Key mappings
-  local opts = { buffer = buf, noremap = true, silent = true }
-
-  -- Navigation
-  vim.keymap.set('n', 'j', function()
-    current_index = math.min(current_index + 1, #options)
-    update_display()
-  end, opts)
-
-  vim.keymap.set('n', 'k', function()
-    current_index = math.max(current_index - 1, 1)
-    update_display()
-  end, opts)
-
-  vim.keymap.set('n', '<Down>', function()
-    current_index = math.min(current_index + 1, #options)
-    update_display()
-  end, opts)
-
-  vim.keymap.set('n', '<Up>', function()
-    current_index = math.max(current_index - 1, 1)
-    update_display()
-  end, opts)
-
-  -- Number keys for direct selection
-  for i = 1, math.min(#options, 9) do
-    vim.keymap.set('n', tostring(i), function()
-      set_result(i)
-    end, opts)
-  end
-
-  -- Selection
-  vim.keymap.set('n', '<CR>', function() set_result(current_index) end, opts)
-  vim.keymap.set('n', '<Esc>', function() set_result(nil) end, opts)
-  vim.keymap.set('n', 'q', function() set_result(nil) end, opts)
 
   -- Initial display
   update_display()
@@ -237,93 +192,45 @@ function M.select(message, options, default_index)
     return default_index or 1
   end
 
-  vim.cmd('redraw')
-  while result == nil do
-    vim.cmd('sleep 50m')
+  -- Use vim.fn.getchar() to wait for input properly
+  local key
+  repeat
     vim.cmd('redraw')
-  end
+    key = vim.fn.getchar()
 
+    -- Handle the key press
+    if key == string.byte('j') then
+      current_index = math.min(current_index + 1, #options)
+      update_display()
+    elseif key == string.byte('k') then
+      current_index = math.max(current_index - 1, 1)
+      update_display()
+    elseif key >= string.byte('1') and key <= string.byte('9') then
+      local selected = key - string.byte('0')
+      if selected <= #options then
+        result = selected
+      end
+    elseif key == 13 then -- Enter key
+      result = current_index
+    elseif key == 27 or key == string.byte('q') then -- Escape or q
+      result = nil
+    end
+  until result ~= nil or result == nil and (key == 27 or key == string.byte('q'))
+
+  close_window(win)
   return result
 end
 
 -- Show an input dialog for text entry
+-- For now, fall back to vim.fn.input to avoid complexity
 function M.input(message, default_text)
-  local lines = vim.split(message, '\n')
-  local max_width = 0
-  for _, line in ipairs(lines) do
-    max_width = math.max(max_width, #line)
-  end
-
-  local width = math.max(60, max_width + 4)
-  local height = #lines + 4
-
-  local buf, win = create_centered_window(width, height, "Input")
-
-  -- Set content
-  local content = {}
-  vim.list_extend(content, lines)
-  table.insert(content, "")
-  table.insert(content, default_text or "")
-  table.insert(content, "")
-  table.insert(content, "Enter text above, then press Ctrl+S to save or Esc to cancel")
-
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
-
-  -- Make only the input line editable
-  local input_line = #lines + 2
-  vim.api.nvim_win_set_cursor(win, {input_line, #(default_text or "")})
-
-  -- Enable insert mode for the input line
-  vim.cmd('startinsert!')
-
-  local result = nil
-
-  local function set_result(value)
-    result = value
-    close_window(win)
-  end
-
-  -- Key mappings
-  local opts = { buffer = buf, noremap = true, silent = true }
-
-  vim.keymap.set('n', '<C-s>', function()
-    local line = vim.api.nvim_buf_get_lines(buf, input_line - 1, input_line, false)[1]
-    set_result(line)
-  end, opts)
-
-  vim.keymap.set('i', '<C-s>', function()
-    local line = vim.api.nvim_buf_get_lines(buf, input_line - 1, input_line, false)[1]
-    set_result(line)
-  end, opts)
-
-  vim.keymap.set({'n', 'i'}, '<Esc>', function()
-    set_result(nil)
-  end, opts)
-
-  -- Restrict editing to input line only
-  vim.api.nvim_create_autocmd({'TextChanged', 'TextChangedI'}, {
-    buffer = buf,
-    callback = function()
-      local cursor = vim.api.nvim_win_get_cursor(win)
-      if cursor[1] ~= input_line then
-        vim.api.nvim_win_set_cursor(win, {input_line, cursor[2]})
-      end
-    end,
-  })
-
-  -- Wait for user input (skip in test mode)
+  -- In test mode, return default
   if M._test_mode then
-    close_window(win)
     return default_text or ""
   end
 
-  vim.cmd('redraw')
-  while result == nil do
-    vim.cmd('sleep 50m')
-    vim.cmd('redraw')
-  end
-
-  return result
+  -- Use vim.fn.input as fallback for now
+  return vim.fn.input(message .. (default_text and (" [" .. default_text .. "]: ") or ": "), default_text or "")
 end
 
 -- Show an informational message
@@ -351,21 +258,6 @@ function M.info(message, title)
   -- Position cursor
   vim.api.nvim_win_set_cursor(win, {#content, 0})
 
-  local dismissed = false
-
-  -- Key mapping for any key
-  local opts = { buffer = buf, noremap = true, silent = true }
-
-  local function dismiss()
-    dismissed = true
-    close_window(win)
-  end
-
-  -- Map common keys
-  local keys = {'<CR>', '<Esc>', 'q', '<Space>', 'j', 'k', 'h', 'l'}
-  for _, key in ipairs(keys) do
-    vim.keymap.set('n', key, dismiss, opts)
-  end
 
   -- Wait for dismissal (skip in test mode)
   if M._test_mode then
@@ -373,11 +265,10 @@ function M.info(message, title)
     return
   end
 
+  -- Use vim.fn.getchar() to wait for any key
   vim.cmd('redraw')
-  while not dismissed do
-    vim.cmd('sleep 50m')
-    vim.cmd('redraw')
-  end
+  vim.fn.getchar()
+  close_window(win)
 end
 
 return M
