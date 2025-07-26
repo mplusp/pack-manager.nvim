@@ -193,6 +193,7 @@ function M.select(message, options, default_index)
   end
 
   -- Use vim.fn.getchar() to wait for input properly
+  local done = false
   local key
   repeat
     vim.cmd('redraw')
@@ -209,13 +210,16 @@ function M.select(message, options, default_index)
       local selected = key - string.byte('0')
       if selected <= #options then
         result = selected
+        done = true
       end
     elseif key == 13 then -- Enter key
       result = current_index
+      done = true
     elseif key == 27 or key == string.byte('q') then -- Escape or q
       result = nil
+      done = true
     end
-  until result ~= nil or result == nil and (key == 27 or key == string.byte('q'))
+  until done
 
   close_window(win)
   return result
