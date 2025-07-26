@@ -338,11 +338,13 @@ function M.menu()
       local selected = key - string.byte('0')
       if selected <= #menu_options then
         result = menu_options[selected].action
+        break
       end
     elseif key == 27 or key == string.byte('q') then -- Escape or q
       result = nil
+      break
     end
-  until result ~= nil or result == nil and (key == 27 or key == string.byte('q'))
+  until false
 
   close_window(win)
   return result
