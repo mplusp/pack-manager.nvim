@@ -170,6 +170,12 @@ describe("pack-manager ui module", function()
         local result = ui.confirm("Test?", true)
         assert.is_false(result)
       end)
+
+      it("should handle Ctrl-C key", function()
+        _G.simulate_keys({3}) -- Ctrl-C
+        local result = ui.confirm("Test?", true)
+        assert.is_false(result)
+      end)
     end)
 
     describe("select dialog key handling", function()
@@ -234,6 +240,12 @@ describe("pack-manager ui module", function()
         assert.is_nil(result)
       end)
 
+      it("should handle Ctrl-C key", function()
+        _G.simulate_keys({3}) -- Ctrl-C
+        local result = ui.select("Choose:", options)
+        assert.is_nil(result)
+      end)
+
       it("should ignore invalid number keys", function()
         _G.simulate_keys({string.byte('9'), 13}) -- 9 is out of range, then Enter
         local result = ui.select("Choose:", options)
@@ -268,6 +280,12 @@ describe("pack-manager ui module", function()
 
       it("should handle 'q' key", function()
         _G.simulate_keys({string.byte('q')})
+        local result = ui.menu()
+        assert.is_nil(result)
+      end)
+
+      it("should handle Ctrl-C key", function()
+        _G.simulate_keys({3}) -- Ctrl-C
         local result = ui.menu()
         assert.is_nil(result)
       end)

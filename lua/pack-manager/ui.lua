@@ -12,11 +12,13 @@ if vim.api and vim.api.nvim_replace_termcodes then
   special_keys.up = vim.api.nvim_replace_termcodes("<Up>", true, true, true)
   special_keys.down = vim.api.nvim_replace_termcodes("<Down>", true, true, true)
   special_keys.esc = vim.api.nvim_replace_termcodes("<Esc>", true, true, true)
+  special_keys.ctrl_c = vim.api.nvim_replace_termcodes("<C-c>", true, true, true)
 else
   -- Fallback for test environment
   special_keys.up = "\128\253\107"   -- Neovim's internal representation
   special_keys.down = "\128\253\108" -- Neovim's internal representation
   special_keys.esc = "\27"           -- ESC character
+  special_keys.ctrl_c = "\3"         -- Ctrl-C character (ASCII 3)
 end
 
 -- Default configuration for floating windows
@@ -81,7 +83,7 @@ function M.confirm(message, default_yes)
   end
 
   -- Add space for buttons
-  local button_line = default_yes and "[Y]es / [N]o" or "[y]es / [N]o"
+  local button_line = default_yes and "[Y]es / [N]o (Ctrl-C/Esc/q to cancel)" or "[y]es / [N]o (Ctrl-C/Esc/q to cancel)"
   max_width = math.max(max_width, #button_line)
 
   local width = math.max(40, max_width + 4)
@@ -121,10 +123,16 @@ function M.confirm(message, default_yes)
 
     -- Handle different key types
     if type(key) == "string" then
-      -- For confirm dialog, we'll ignore arrow keys but handle single ESC
-      local bytes = {key:byte(1, -1)}
-      if #bytes == 1 and bytes[1] == 27 then
+      -- For confirm dialog, we'll ignore arrow keys but handle ESC and Ctrl-C
+      if key == special_keys.esc or key == special_keys.ctrl_c then
         result = false
+      else
+        local bytes = {key:byte(1, -1)}
+        if #bytes == 1 and bytes[1] == 27 then
+          result = false
+        elseif #bytes == 1 and bytes[1] == 3 then -- Ctrl-C fallback
+          result = false
+        end
       end
       -- Ignore other escape sequences like arrow keys
     elseif type(key) == "number" then
@@ -135,6 +143,8 @@ function M.confirm(message, default_yes)
       elseif key == 13 then -- Enter key
         result = default_yes and true or false
       elseif key == 27 then -- Escape key
+        result = false
+      elseif key == 3 then -- Ctrl-C
         result = false
       elseif key == string.byte('q') or key == string.byte('Q') then
         result = false
@@ -174,7 +184,7 @@ function M.select(message, options, default_index)
   table.insert(content, "")
   vim.list_extend(content, option_lines)
   table.insert(content, "")
-  table.insert(content, "Use ↑↓ or j/k to navigate, Enter to select, Esc/q to cancel")
+  table.insert(content, "Use ↑↓ or j/k to navigate, Enter to select, Ctrl-C/Esc/q to cancel")
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
@@ -232,7 +242,7 @@ function M.select(message, options, default_index)
       elseif key == special_keys.down then
         current_index = math.min(current_index + 1, #options)
         update_display()
-      elseif key == special_keys.esc then
+      elseif key == special_keys.esc or key == special_keys.ctrl_c then
         result = nil
         done = true
       else
@@ -267,6 +277,9 @@ function M.select(message, options, default_index)
         result = current_index
         done = true
       elseif key == 27 then -- Escape key (single ESC)
+        result = nil
+        done = true
+      elseif key == 3 then -- Ctrl-C
         result = nil
         done = true
       elseif key == string.byte('q') or key == string.byte('Q') then
@@ -378,7 +391,7 @@ function M.menu()
     end
 
     table.insert(content, "")
-    table.insert(content, "Use ↑↓ or j/k to navigate, Enter to select, number key for quick select, q/Esc to quit")
+    table.insert(content, "Use ↑↓ or j/k to navigate, Enter to select, number key for quick select, Ctrl-C/Esc/q to quit")
 
     vim.api.nvim_buf_set_option(buf, 'modifiable', true)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
@@ -418,7 +431,7 @@ function M.menu()
       elseif key == special_keys.down then
         current_index = math.min(current_index + 1, #menu_options)
         update_display()
-      elseif key == special_keys.esc then
+      elseif key == special_keys.esc or key == special_keys.ctrl_c then
         result = nil
         done = true
       else
@@ -435,6 +448,10 @@ function M.menu()
           end
         elseif #bytes == 1 and bytes[1] == 27 then
           -- Single ESC
+          result = nil
+          done = true
+        elseif #bytes == 1 and bytes[1] == 3 then
+          -- Ctrl-C fallback
           result = nil
           done = true
         elseif #bytes == 1 then
@@ -476,6 +493,9 @@ function M.menu()
         result = menu_options[current_index].action
         done = true
       elseif key == 27 then -- Escape key
+        result = nil
+        done = true
+      elseif key == 3 then -- Ctrl-C
         result = nil
         done = true
       elseif key == string.byte('q') or key == string.byte('Q') then
