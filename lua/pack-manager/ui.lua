@@ -380,6 +380,9 @@ function M.menu()
   repeat
     vim.cmd('redraw')
     key = vim.fn.getchar()
+    
+    -- Debug: uncomment to see key values
+    -- vim.notify(string.format("Key type: %s, value: %s", type(key), vim.inspect(key)))
 
     -- Handle different key types
     if type(key) == "string" then
@@ -399,8 +402,28 @@ function M.menu()
         result = nil
         done = true
       end
+      -- Handle single character strings (for regular keys converted from numbers)
+      if #bytes == 1 then
+        local char = string.char(bytes[1])
+        if char == 'j' or char == 'J' then
+          current_index = math.min(current_index + 1, #menu_options)
+          update_display()
+        elseif char == 'k' or char == 'K' then
+          current_index = math.max(current_index - 1, 1)
+          update_display()
+        elseif char >= '1' and char <= '8' then
+          local selected = string.byte(char) - string.byte('0')
+          if selected <= #menu_options then
+            result = menu_options[selected].action
+            done = true
+          end
+        elseif char == 'q' or char == 'Q' then
+          result = nil
+          done = true
+        end
+      end
     elseif type(key) == "number" then
-      -- Handle regular keys
+      -- Handle regular keys and special keycodes
       if key == string.byte('j') or key == string.byte('J') then
         current_index = math.min(current_index + 1, #menu_options)
         update_display()

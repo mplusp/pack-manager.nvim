@@ -275,6 +275,12 @@ describe("pack-manager ui module", function()
         local result = ui.menu()
         assert.is_nil(result)
       end)
+      
+      it("should handle arrow key navigation in menu", function()
+        _G.simulate_keys({"\027[B", "\027[B", 13}) -- Down, down, Enter (should select option 3)
+        local result = ui.menu()
+        assert.are.equal("update", result)
+      end)
     end)
 
     describe("key type handling tests", function()
