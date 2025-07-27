@@ -202,14 +202,23 @@ describe("pack-manager ui module", function()
       end)
 
       it("should handle arrow key navigation", function()
-        -- Test up arrow
-        _G.simulate_keys({"\027[B", 13}) -- Down arrow then Enter
+        -- Test down arrow using fallback format
+        local down_key = "\128\253\108" -- Fallback for test environment
+        _G.simulate_keys({down_key, 13}) -- Down arrow then Enter
         local result = ui.select("Choose:", options)
         assert.are.equal(2, result)
 
         -- Test multiple arrow movements
-        _G.simulate_keys({"\027[B", "\027[B", "\027[A", 13}) -- Down, down, up, Enter
+        local up_key = "\128\253\107" -- Fallback for test environment
+        _G.simulate_keys({down_key, down_key, up_key, 13}) -- Down, down, up, Enter
         result = ui.select("Choose:", options)
+        assert.are.equal(2, result)
+      end)
+      
+      it("should handle legacy escape sequence arrow keys", function()
+        -- Test legacy format for compatibility
+        _G.simulate_keys({"\027[B", 13}) -- Down arrow then Enter
+        local result = ui.select("Choose:", options)
         assert.are.equal(2, result)
       end)
 
@@ -277,9 +286,17 @@ describe("pack-manager ui module", function()
       end)
       
       it("should handle arrow key navigation in menu", function()
-        _G.simulate_keys({"\027[B", "\027[B", 13}) -- Down, down, Enter (should select option 3)
+        local down_key = "\128\253\108" -- Fallback for test environment
+        _G.simulate_keys({down_key, down_key, 13}) -- Down, down, Enter (should select option 3)
         local result = ui.menu()
         assert.are.equal("update", result)
+      end)
+      
+      it("should handle proper Neovim arrow key format", function()
+        local up_key = "\128\253\107" -- Fallback for test environment
+        _G.simulate_keys({up_key, 13}) -- Up then Enter (should stay on option 1)
+        local result = ui.menu()
+        assert.are.equal("add", result)
       end)
     end)
 

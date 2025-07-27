@@ -6,6 +6,19 @@ local M = {}
 -- Test mode flag - when true, skip actual UI interaction
 M._test_mode = _G._TEST or false
 
+-- Precompute special key codes (with fallback for test environment)
+local special_keys = {}
+if vim.api and vim.api.nvim_replace_termcodes then
+  special_keys.up = vim.api.nvim_replace_termcodes("<Up>", true, true, true)
+  special_keys.down = vim.api.nvim_replace_termcodes("<Down>", true, true, true)
+  special_keys.esc = vim.api.nvim_replace_termcodes("<Esc>", true, true, true)
+else
+  -- Fallback for test environment
+  special_keys.up = "\128\253\107"   -- Neovim's internal representation
+  special_keys.down = "\128\253\108" -- Neovim's internal representation
+  special_keys.esc = "\27"           -- ESC character
+end
+
 -- Default configuration for floating windows
 local default_config = {
   relative = 'editor',
@@ -212,16 +225,28 @@ function M.select(message, options, default_index)
 
     -- Handle different key types
     if type(key) == "string" then
-      -- Handle special keys (arrow keys come as strings)
-      local bytes = {key:byte(1, -1)}
-      if #bytes == 3 and bytes[1] == 27 and bytes[2] == 91 then
-        -- ESC[A = Up, ESC[B = Down
-        if bytes[3] == 65 then -- Up arrow
-          current_index = math.max(current_index - 1, 1)
-          update_display()
-        elseif bytes[3] == 66 then -- Down arrow
-          current_index = math.min(current_index + 1, #options)
-          update_display()
+      -- Handle special keys (arrow keys come as strings starting with 0x80)
+      if key == special_keys.up then
+        current_index = math.max(current_index - 1, 1)
+        update_display()
+      elseif key == special_keys.down then
+        current_index = math.min(current_index + 1, #options)
+        update_display()
+      elseif key == special_keys.esc then
+        result = nil
+        done = true
+      else
+        -- Handle legacy escape sequences for compatibility
+        local bytes = {key:byte(1, -1)}
+        if #bytes == 3 and bytes[1] == 27 and bytes[2] == 91 then
+          -- ESC[A = Up, ESC[B = Down (for older terminals)
+          if bytes[3] == 65 then -- Up arrow
+            current_index = math.max(current_index - 1, 1)
+            update_display()
+          elseif bytes[3] == 66 then -- Down arrow
+            current_index = math.min(current_index + 1, #options)
+            update_display()
+          end
         end
       end
     elseif type(key) == "number" then
@@ -386,40 +411,51 @@ function M.menu()
 
     -- Handle different key types
     if type(key) == "string" then
-      -- Handle special keys (arrow keys come as strings)
-      local bytes = {key:byte(1, -1)}
-      if #bytes == 3 and bytes[1] == 27 and bytes[2] == 91 then
-        -- ESC[A = Up, ESC[B = Down
-        if bytes[3] == 65 then -- Up arrow
-          current_index = math.max(current_index - 1, 1)
-          update_display()
-        elseif bytes[3] == 66 then -- Down arrow
-          current_index = math.min(current_index + 1, #menu_options)
-          update_display()
-        end
-      elseif #bytes == 1 and bytes[1] == 27 then
-        -- Single ESC
+      -- Handle special keys (arrow keys come as strings starting with 0x80)
+      if key == special_keys.up then
+        current_index = math.max(current_index - 1, 1)
+        update_display()
+      elseif key == special_keys.down then
+        current_index = math.min(current_index + 1, #menu_options)
+        update_display()
+      elseif key == special_keys.esc then
         result = nil
         done = true
-      end
-      -- Handle single character strings (for regular keys converted from numbers)
-      if #bytes == 1 then
-        local char = string.char(bytes[1])
-        if char == 'j' or char == 'J' then
-          current_index = math.min(current_index + 1, #menu_options)
-          update_display()
-        elseif char == 'k' or char == 'K' then
-          current_index = math.max(current_index - 1, 1)
-          update_display()
-        elseif char >= '1' and char <= '8' then
-          local selected = string.byte(char) - string.byte('0')
-          if selected <= #menu_options then
-            result = menu_options[selected].action
-            done = true
+      else
+        -- Handle legacy escape sequences and regular character strings
+        local bytes = {key:byte(1, -1)}
+        if #bytes == 3 and bytes[1] == 27 and bytes[2] == 91 then
+          -- ESC[A = Up, ESC[B = Down (for older terminals)
+          if bytes[3] == 65 then -- Up arrow
+            current_index = math.max(current_index - 1, 1)
+            update_display()
+          elseif bytes[3] == 66 then -- Down arrow
+            current_index = math.min(current_index + 1, #menu_options)
+            update_display()
           end
-        elseif char == 'q' or char == 'Q' then
+        elseif #bytes == 1 and bytes[1] == 27 then
+          -- Single ESC
           result = nil
           done = true
+        elseif #bytes == 1 then
+          -- Handle single character strings
+          local char = string.char(bytes[1])
+          if char == 'j' or char == 'J' then
+            current_index = math.min(current_index + 1, #menu_options)
+            update_display()
+          elseif char == 'k' or char == 'K' then
+            current_index = math.max(current_index - 1, 1)
+            update_display()
+          elseif char >= '1' and char <= '8' then
+            local selected = string.byte(char) - string.byte('0')
+            if selected <= #menu_options then
+              result = menu_options[selected].action
+              done = true
+            end
+          elseif char == 'q' or char == 'Q' then
+            result = nil
+            done = true
+          end
         end
       end
     elseif type(key) == "number" then
