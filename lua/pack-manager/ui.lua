@@ -361,33 +361,33 @@ function M.menu()
 
   -- Header lines
   local header_lines = {"Choose an action:", ""}
-  
+
   -- Current selection
   local current_index = 1
-  
+
   -- Update function to show cursor
   local function update_display()
     local content = {}
     vim.list_extend(content, header_lines)
-    
+
     for i, option in ipairs(menu_options) do
       local prefix = i == current_index and "► " or "  "
       local line = string.format("%s%s. %-" .. max_label_width .. "s - %s",
                                  prefix, option.key, option.label, option.desc)
       table.insert(content, line)
     end
-    
+
     table.insert(content, "")
     table.insert(content, "Use ↑↓ or j/k to navigate, Enter to select, number key for quick select, q/Esc to quit")
-    
+
     vim.api.nvim_buf_set_option(buf, 'modifiable', true)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
     vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-    
+
     -- Position cursor on current option
     vim.api.nvim_win_set_cursor(win, {2 + current_index, 0})
   end
-  
+
   -- Initial display
   update_display()
 
@@ -405,7 +405,7 @@ function M.menu()
   repeat
     vim.cmd('redraw')
     key = vim.fn.getchar()
-    
+
     -- Debug: uncomment to see key values
     -- vim.notify(string.format("Key type: %s, value: %s", type(key), vim.inspect(key)))
 
